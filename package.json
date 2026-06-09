@@ -1,6 +1,6 @@
 {
   "name": "mita-dom",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
   "main": "./dist/mita-dom.js",
@@ -43,6 +43,6 @@
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/moonhuntercode/mita-dom.git"
+    "url": "git+https://github.com/moonhuntercode/mita-dom.git"
   }
 }
