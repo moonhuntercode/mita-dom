@@ -1,14 +1,42 @@
 {
   "name": "mita-dom",
-  "version": "0.0.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
+  "main": "./dist/mita-dom.js",
+  "exports": {
+    ".": "./dist/mita-dom.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "MANIFIESTO.md",
+    "LICENSE",
+    "LICENSE.md"
+  ],
+  "private": false,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "devDependencies": {
+    "terser": "^5.48.0",
     "vite": "^8.0.12"
+  },
+  "keywords": [
+    "web-components",
+    "signals",
+    "vanilla-js",
+    "light-dom",
+    "bolivia"
+  ],
+  "author": "victor code",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/moonhuntercode/mita-dom.git"
   }
 }
