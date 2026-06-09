@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MitaDOM + TS Demo</title>
+  </head>
+  <body>
+    <!-- Fieles a nuestra filosofía: La estructura HTML va en su archivo HTML, no secuestrada en JS -->
+    <div id="app">
+      <div>
+        <h1>🌿 MitaDOM + TypeScript 💙</h1>
+        <p>Esta mini-demo verifica que los tipos (<code>.d.ts</code>) de la librería funcionan perfectamente respetando el HTML Semántico y la separación de responsabilidades.</p>
+        
+        <div class="card">
+          <button id="btn-incrementar" type="button">Incrementar</button>
+          <p id="valor-contador">Valor: 0</p>
+        </div>
+
+        <p class="read-the-docs">
+          Revisa <code>src/main.ts</code> en tu editor para ver el autocompletado y validación estricta en acción.
+        </p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
