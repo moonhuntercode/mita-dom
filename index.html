@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mita-dom - Dev Playground</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #0a0a0a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #00e676;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    nav {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    nav a {
+      color: #ffab00;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border: 1px solid #ffab00;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    nav a:hover {
+      background: rgba(255, 171, 0, 0.1);
+    }
+
+    .container {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 1000px;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>mita-dom Playground</h1>
+
+  <!-- Enlaces normales, la Navigation API los interceptará automáticamente -->
+  <nav>
+    <a href="/">Inicio (Tarjetas)</a>
+    <a href="/perfil">Ver Perfil (Fetch & SPA)</a>
+  </nav>
+
+  <div id="vista-inicio" class="container">
+    <mita-tarjeta></mita-tarjeta>
+    <mita-tarjeta></mita-tarjeta>
+  </div>
+
+  <!-- El componente maneja internamente su ocultamiento al escuchar la ruta -->
+  <mita-perfil></mita-perfil>
+
+  <!-- Cargamos todo e implementamos la vista inicio modularmente -->
+  <script type="module">
+    import { rutaActual } from '/src/index.js';
+
+    // La vista de inicio es un simple div, así que usamos el Signal exportado para ocultarlo
+    const $inicio = document.getElementById('vista-inicio');
+    rutaActual.suscribir(ruta => {
+      if ($inicio) {
+        // Escondemos las tarjetas si no estamos en la raíz
+        $inicio.style.display = (ruta === '/') ? 'flex' : 'none';
+      }
+    });
+  </script>
+</body>
+
+</html>

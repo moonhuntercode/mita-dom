@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * MitaDOM - Librería Principal
+ * mita-dom - Librería Principal
  */
 
 // 1. Motor Lógico (Signals, Router, Resources)

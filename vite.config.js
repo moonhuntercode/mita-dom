@@ -12,7 +12,7 @@ export default defineConfig(({ command }) => {
             // Justificación: Le indica a Vite que debe compilar este proyecto como una librería de NPM (ES Modules) usando src/index.js como entrada.
             lib: {
                 entry: 'src/index.js',
-                name: 'MitaDOM',
+                name: 'mita-dom',
                 formats: ['es']
             },
             // Keyword: 'terser'

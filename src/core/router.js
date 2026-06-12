@@ -31,7 +31,7 @@ if (typeof window !== 'undefined' && window.navigation) {
         }
     });
 } else if (typeof window !== 'undefined') {
-    console.warn('MitaDOM: Tu navegador no soporta la Navigation API. El enrutamiento SPA no está disponible.');
+    console.warn('mita-dom: Tu navegador no soporta la Navigation API. El enrutamiento SPA no está disponible.');
 }
 
 /**

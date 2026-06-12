@@ -1,17 +1,19 @@
-# Estrategia de Pruebas: MitaDOM
+# Estrategia de Pruebas: mita-dom
 
-Este documento detalla la estrategia de pruebas manuales y automáticas para garantizar la calidad, reactividad y rendimiento de la librería MitaDOM.
+Este documento detalla la estrategia de pruebas manuales y automáticas para garantizar la calidad, reactividad y rendimiento de la librería mita-dom.
 
 ## 🤖 Pruebas Automáticas (Unit Testing)
 
 Hemos adoptado el *test runner* nativo de Node.js v24 (`node:test`) para mantener un stack moderno y sin dependencias pesadas.
 
 ### Ejecución
+
 ```bash
 node --test
 ```
 
 ### Cobertura Central
+
 1. **Motor Reactivo (`test/signals.test.js`)**:
    - Inicialización, sincronización inmediata, notificación y prevención de duplicados (`Set`).
 2. **Fetch Granular Reactivo (`test/resource.test.js`)**:
@@ -32,7 +34,7 @@ Levanta el servidor local con `npm run dev` y dirígete a `http://localhost:5173
    - Al entrar al `/perfil`, deberás ver la animación pulsante de *Cargando datos desde la API...* (gestionada por `recurso.loading`).
    - Tras 1.5 segundos, el esqueleto debe ser reemplazado granularmente por los datos reales de Jane Doe.
 3. **Validación de Memory Leaks (Garbage Collection)**:
-   - Ingresa a la consola de desarrollo (F12 -> Console). 
+   - Ingresa a la consola de desarrollo (F12 -> Console).
    - Nuestra refactorización del `disconnectedCallback` en `<mita-tarjeta>` asegura que al navegar de `/` a `/perfil`, la tarjeta destruye sus listeners del estado global, previniendo los *memory leaks* por Closures retenidos.
 4. **CSS Mobile First e Inyección Semántica**:
    - Inspecciona el `<mita-perfil>` en móvil (<768px). Comprueba los estilos y acentos de color naranja.
