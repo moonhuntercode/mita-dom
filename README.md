@@ -24,6 +24,18 @@ Ofrece un ecosistema completo para *Single Page Applications* (SPAs) enfocándos
 
 mita-dom no te obliga a configurar compiladores extraños. Puedes usarlo en proyectos existentes o crear uno nuevo desde cero.
 
+---
+
+## 🚨 Guía de Migración a v2.x (Breaking Changes)
+Si vienes de la versión `1.x`, debes tener en cuenta los siguientes cambios arquitectónicos introducidos en la **v2.1.6**:
+
+1. **Eliminación de `estadoAppGlobal`**: El core del framework ya no exporta estados globales prefabricados. Ahora tú debes crear tus propias instancias en tu aplicación: `const miEstado = new Signal(0)`.
+2. **Nueva API CRUD para Signals**: Las mutaciones directas (`estado.value = 10`) han sido deprecadas. Ahora debes usar `.get()`, `.set()`, `.update()`, `.patch()` y `.reset()`.
+3. **Persistencia y Arquitectura Avanzada**: El constructor de `Signal` ahora acepta un objeto de opciones para Inmutabilidad y Adaptadores de Bases de Datos (`storageAdapter`).
+4. **Mita Vite Plugin**: Se incluyó `mitaHmrPlugin()` para facilitar el Granular HMR en tus proyectos de Vite.
+
+---
+
 ### 1. Iniciar un proyecto nuevo (Automatizado)
 
 Si quieres empezar un proyecto nuevo con todo configurado automáticamente (Servidor local, Bundler, y TypeScript opcional), te recomendamos usar el andamiaje oficial de Vite:
@@ -50,12 +62,16 @@ npm install mita-dom
 mita-dom es modular, solo importas lo que necesitas. Aquí un ejemplo rápido usando *Signals* y el *Router*:
 
 ```javascript
-import { Signal, rutaActual, MitaTarjeta } from 'mita-dom';
+import { Signal, rutaActual, navegarA } from 'mita-dom';
 
-// Crear un estado reactivo puro
-const estadoGlobal = new Signal(0);
+// Crear estado con persistencia e inmutabilidad
+const estadoGlobal = new Signal({ contador: 0 }, { 
+  immutable: true,
+  persistKey: 'mi_app_estado'
+});
 
-// Suscribirse a los cambios de la URL (Navigation API)
+// Mutación parcial avanzada (v2.x)
+estadoGlobal.patch({ contador: 1 });
 rutaActual.suscribir((ruta) => {
     console.log("El usuario navegó de manera fluida a:", ruta);
 });

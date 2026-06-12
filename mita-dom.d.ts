@@ -1,55 +1,58 @@
-/**
- * -----------------------------------------------------------------
- * mita-dom - TypeScript Declarations
- * Proporciona autocompletado estricto sin compilar nada a JavaScript.
- * -----------------------------------------------------------------
- */
+// @ts-check
 
-/**
- * El núcleo reactivo: Un gestor de estado granular basado en observables.
- */
-export class Signal<T> {
-    constructor(valorInicial: T);
-
-    /** Obtiene el valor actual del Signal. */
-    get value(): T;
-
-    /** Actualiza el valor y notifica automáticamente a los suscriptores. */
-    set value(nuevoValor: T);
-
-    /** Registra una función que se ejecutará cada vez que el valor cambie. */
-    suscribir(callback: (valor: T) => void): void;
-
-    /** Elimina la suscripción para liberar memoria (Garbage Collection). */
-    desuscribir(callback: (valor: T) => void): void;
-
-    /** Fuerza la notificación a todos los suscriptores. */
-    notificar(): void;
+export interface SignalOptions<T> {
+  immutable?: boolean;
+  persistKey?: string;
+  storageAdapter?: {
+    getItem: (key: string) => any;
+    setItem: (key: string, val: string) => any;
+    removeItem: (key: string) => any;
+  };
+  guard?: (newValue: T, oldValue: T) => boolean;
+  onMutate?: (newValue: T, oldValue: T) => void;
 }
 
-/** Instancia de demostración para el estado global */
-export const estadoAppGlobal: Signal<number>;
+export class Signal<T> {
+  constructor(valorInicial: T, options?: SignalOptions<T>);
+  
+  /** @deprecated Usa .get() o .set() */
+  value: T;
 
-/**
- * Router SPA reactivo impulsado por el estándar Navigation API.
- */
+  get(): T;
+  set(nuevoValor: T): boolean;
+  update(updaterFn: (estadoAnterior: T) => T): boolean;
+  patch(partialValue: Partial<T>): boolean;
+  reset(): void;
+  destroy(): void;
+
+  suscribir(callback: (valor: T) => void): void;
+  desuscribir(callback: (valor: T) => void): void;
+  notificar(): void;
+}
+
+// El estadoAppGlobal fue retirado de la librería en v2.1.6
+// export const estadoAppGlobal: Signal<any>;
+
+// Enrutador
+export interface RutaCallback {
+  (ruta: string): void;
+}
+
 export const rutaActual: Signal<string>;
+export function navegarA(ruta: string): void;
 
-/**
- * Tupla reactiva para manejar flujos de datos asíncronos (Fetch).
- * Actualiza automáticamente los Signals durante el ciclo de vida de la promesa.
- */
-export function crearRecurso<T>(
-    promesaFunc: () => Promise<T>
-): {
-    data: Signal<T | null>;
-    loading: Signal<boolean>;
-    error: Signal<Error | null>;
-};
+// Recursos
+export interface Resource<T> {
+  data: Signal<T | null>;
+  loading: Signal<boolean>;
+  error: Signal<Error | null>;
+  refetch: () => Promise<void>;
+}
 
-/**
- * Utilidad de seguridad para prevenir ataques XSS usando APIs nativas.
- */
-export function sanitizarTexto(htmlInseguro: string): string;
+export function crearRecurso<T>(fetcherFn: () => Promise<T>): Resource<T>;
 
-// Fin del archivo de definiciones
+// Seguridad
+export function sanitizarTexto(htmlPeligroso: string): string;
+
+// Plugins
+export function mitaHmrPlugin(): any;

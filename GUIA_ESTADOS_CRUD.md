@@ -1,0 +1,105 @@
+# 🗃️ Guía Maestra: C.R.U.D. de Estados (Signals)
+
+MitaDOM no utiliza un Virtual DOM. Nuestra reactividad se basa en **Signals** (Patrón Observador). Esto significa que cuando un dato cambia, sabemos exactamente qué nodo de texto actualizar, garantizando 0% de re-renders innecesarios.
+
+Esta guía te enseñará cómo administrar la Memoria, el Estado Global y Local utilizando operaciones **C.R.U.D.** completas.
+
+---
+
+## 🏗️ CREATE (Crear Estados)
+
+### 1. Estado Local (Atado al Componente)
+Se crea en el `constructor()` del Web Component. Nace y muere con la instancia.
+```javascript
+import { Signal } from 'mita-dom';
+
+export class MiComponente extends HTMLElement {
+  constructor() {
+    super();
+    // Instancia local
+    this.estadoLocal = new Signal({ contador: 0 });
+  }
+}
+```
+
+### 2. Estado Global (Store Central)
+Se crea en un archivo separado (ej. `src/store/global.js`) y se exporta. Sobrevive a la destrucción de los componentes.
+```javascript
+// src/store/global.js
+import { Signal } from 'mita-dom';
+export const sessionActual = new Signal({ usuario: null, token: null });
+```
+
+---
+
+## 📖 READ (Leer y Reaccionar)
+
+Puedes leer el estado de dos formas: **Síncrona** o **Reactiva**.
+
+### 1. Lectura Síncrona (Snapshot)
+Si solo necesitas saber el valor en un instante (ej. al enviar un formulario), lee la propiedad `.value`.
+```javascript
+const nombre = this.estadoLocal.value.nombre;
+```
+
+### 2. Lectura Reactiva (Suscripción)
+Para que el HTML cambie automáticamente, debes suscribirte. **Siempre** haz esto dentro del `connectedCallback()`:
+```javascript
+connectedCallback() {
+  // Guardamos la referencia de la función anónima en una variable privada (_callback)
+  // Esto es OBLIGATORIO para el paso DELETE (Desuscribirse).
+  this._callback = (nuevoEstado) => {
+    this.querySelector('#txt-contador').textContent = nuevoEstado.contador;
+  };
+  
+  this.estadoLocal.suscribir(this._callback);
+}
+```
+
+---
+
+## ✍️ UPDATE (Actualizar Estados)
+
+**Regla de Oro:** Siempre usa el principio de la Inmutabilidad. Nunca alteres propiedades de un objeto directamente, reemplaza el objeto completo usando el *Spread Operator* (`...`).
+
+❌ **Forma Incorrecta (Mutación impura):**
+```javascript
+// Vite y MitaDOM no detectarán el cambio porque la referencia de memoria es la misma.
+this.estadoLocal.value.contador += 1; 
+```
+
+✅ **Forma Correcta (Inmutabilidad):**
+```javascript
+// Reemplazamos el objeto por uno nuevo. Esto dispara el ciclo reactivo.
+const estadoAnterior = this.estadoLocal.value;
+this.estadoLocal.value = { ...estadoAnterior, contador: estadoAnterior.contador + 1 };
+```
+
+---
+
+## 🗑️ DELETE (Destrucción y Memory Leaks)
+
+Si tu componente se oculta (o si un Router lo destruye), el ciclo de vida `disconnectedCallback()` entrará en acción.
+Si te suscribiste a un **Estado Global**, y no te desuscribes, la función seguirá viva en la RAM ejecutándose en el fondo, creando un temido *Memory Leak*.
+
+```javascript
+disconnectedCallback() {
+  // OBLIGATORIO: Soltamos la referencia del Signal Global
+  if (this._callbackGlobal) {
+    sessionActual.desuscribir(this._callbackGlobal);
+  }
+  
+  // Opcional: El Estado Local es recogido por el Garbage Collector automáticamente, 
+  // pero es buena práctica limpiarlo si tienes eventos pesados.
+}
+```
+
+---
+
+## 📡 Integración con Telemetría (Logger Backend)
+Tal como lo verás en la arquitectura avanzada, nunca deberías hacer `console.log()` directo para debuggear mutaciones. Utiliza tu servicio de Telemetría (ej. `src/utils/logger.js`) para interceptar las actualizaciones complejas.
+
+```javascript
+// Ejemplo de Telemetría al Update
+Logger.info('Usuario mutó el Signal del Carrito', { items: 5 });
+```

@@ -66,3 +66,79 @@ test('Se puede desuscribir correctamente', (t) => {
     // No debió ejecutarse
     assert.strictEqual(vecesEjecutado, 0);
 });
+
+// ==========================================
+// NUEVAS PRUEBAS: ARQUITECTURA AVANZADA v2.1.6
+// ==========================================
+
+test('Signal.get() y Signal.set() funcionan como CRUD', (t) => {
+    const s = new Signal(100);
+    assert.strictEqual(s.get(), 100);
+    s.set(200);
+    assert.strictEqual(s.get(), 200);
+});
+
+test('Signal.update() realiza mutaciones funcionales', (t) => {
+    const s = new Signal(10);
+    s.update(val => val + 5);
+    assert.strictEqual(s.get(), 15);
+});
+
+test('Signal.patch() fusiona objetos correctamente', (t) => {
+    const s = new Signal({ a: 1, b: 2 });
+    const muto = s.patch({ b: 3, c: 4 });
+    assert.strictEqual(muto, true);
+    assert.deepStrictEqual(s.get(), { a: 1, b: 3, c: 4 });
+});
+
+test('Signal con guard rechaza mutaciones no autorizadas', (t) => {
+    const s = new Signal(10, {
+        guard: (newVal) => newVal >= 0 // Solo permite positivos
+    });
+    
+    // Mutación válida
+    const mutoBien = s.set(5);
+    assert.strictEqual(mutoBien, true);
+    assert.strictEqual(s.get(), 5);
+
+    // Mutación rechazada
+    const mutoMal = s.set(-5);
+    assert.strictEqual(mutoMal, false); // Fue rechazado
+    assert.strictEqual(s.get(), 5); // El valor no cambió
+});
+
+test('Signal con inmutabilidad bloquea referencias directas', (t) => {
+    const s = new Signal({ config: { activo: true } }, { immutable: true });
+    
+    const ref = s.get();
+    try {
+        ref.config.activo = false; 
+    } catch (e) {
+        // En "strict mode" lanzararía TypeError, pero aseguramos verificando que el valor no cambió:
+    }
+    // Como deepFreeze hace una copia antes de devolver, aunque no crashee en test runner suelto,
+    // garantizamos que el estado real dentro del signal sigue siendo true.
+    assert.strictEqual(s.get().config.activo, true);
+});
+
+test('Signal usa StorageAdapter para persistencia', (t) => {
+    const mockStorage = {
+        data: {},
+        getItem(key) { return this.data[key]; },
+        setItem(key, val) { this.data[key] = val; },
+        removeItem(key) { delete this.data[key]; }
+    };
+
+    // 1. Debe escribir al crear si lo forzamos o al cambiar
+    const s = new Signal(42, { persistKey: 'test_key', storageAdapter: mockStorage });
+    s.set(99);
+    assert.strictEqual(mockStorage.data['test_key'], '99');
+
+    // 2. Debe leer al inicializar
+    const s2 = new Signal(0, { persistKey: 'test_key', storageAdapter: mockStorage });
+    assert.strictEqual(s2.get(), 99);
+
+    // 3. Debe borrar en destroy
+    s2.destroy();
+    assert.strictEqual(mockStorage.data['test_key'], undefined);
+});
