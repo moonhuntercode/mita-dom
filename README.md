@@ -77,18 +77,12 @@ const contador = new Signal<number>(0);
 // contador.value = "hola"; // ❌ Error TS: Type 'string' is not assignable to type 'number'
 ```
 
-*Si quieres ver un proyecto completo funcionando, revisa la carpeta `examples/demo-ts/` en nuestro repositorio, creada exclusivamente para previsualizar y evaluar el tipado.*
+### 3. Ejemplos y Entorno de Desarrollo
+Para probar la librería en un entorno real y visualizar componentes, consulta nuestros proyectos de ejemplo separados:
+- **`example-mita-spa-01-js`**: Aplicación de ejemplo usando Vite + Vanilla JS + MitaDOM.
 
-### 3. Entorno de Desarrollo (Playground)
-
-Si clonas el repositorio y quieres interactuar con la librería y sus componentes base, levanta el servidor de Vite:
-
-```bash
-npm install
-npm run dev
-```
-
-Esto abrirá en `http://localhost:5173/` nuestro entorno interactivo.
+> [!WARNING]
+> **No utilices `npm run preview` dentro de este repositorio.** MitaDOM es una librería, no una SPA. El comando `preview` de Vite devolverá un error 404 porque no genera un `index.html` en la compilación. Para probar MitaDOM, instálalo en un proyecto externo.
 
 ### 4. Pruebas Automáticas
 

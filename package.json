@@ -1,6 +1,6 @@
 {
   "name": "mita-dom",
-  "version": "1.0.4",
+  "version": "1.1.5",
   "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
   "main": "./dist/mita-dom.js",
@@ -24,8 +24,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test --test-reporter=spec"
   },
   "devDependencies": {
     "eslint": "^10.4.1",
@@ -44,5 +43,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/moonhuntercode/mita-dom.git"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

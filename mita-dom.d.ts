@@ -52,10 +52,4 @@ export function crearRecurso<T>(
  */
 export function sanitizarTexto(htmlInseguro: string): string;
 
-// Soporte de autocompletado para el DOM global (cuando se usen nuestros Custom Elements)
-declare global {
-    interface HTMLElementTagNameMap {
-        'mita-tarjeta': HTMLElement;
-        'mita-perfil': HTMLElement;
-    }
-}
+// Fin del archivo de definiciones
