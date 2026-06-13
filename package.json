@@ -1,6 +1,6 @@
 {
   "name": "mita-dom",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
   "main": "./dist/mita-dom.js",
@@ -9,16 +9,15 @@
     ".": {
       "types": "./mita-dom.d.ts",
       "default": "./dist/mita-dom.js"
-    }
+    },
+    "./*.md": "./*.md"
   },
   "files": [
     "dist",
     "src",
     "mita-dom.d.ts",
-    "README.md",
-    "MANIFIESTO.md",
-    "LICENSE",
-    "LICENSE.md"
+    "*.md",
+    "LICENSE"
   ],
   "private": false,
   "scripts": {
