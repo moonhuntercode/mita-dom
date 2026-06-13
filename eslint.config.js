@@ -1,28 +1,22 @@
+import globals from "globals";
+
+/** @type {import('eslint').Linter.Config[]} */
 export default [
     {
-        ignores: ["dist/**", "node_modules/**"]
-    },
-    {
-        files: ["**/*.js"],
+        ignores: ["dist/**"],
+        files: ["src/**/*.js", "test/**/*.js"],
         languageOptions: {
-            ecmaVersion: "latest",
-            sourceType: "module",
             globals: {
-                // APIs del navegador
-                window: "readonly",
-                document: "readonly",
-                HTMLElement: "readonly",
-                customElements: "readonly",
-                console: "readonly",
-                URL: "readonly",
-                Promise: "readonly",
-                setTimeout: "readonly",
-                // APIs nativas de Node para Tests
-                global: "writable"
+                ...globals.browser,
+                ...globals.node,
+                ...globals.es2021
             }
         },
         rules: {
-            "no-unused-vars": "warn",
+            "no-unused-vars": ["error", { 
+                "argsIgnorePattern": "^_|^t$", 
+                "caughtErrorsIgnorePattern": "^_|^e$" 
+            }],
             "no-undef": "error"
         }
     }

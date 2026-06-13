@@ -20,11 +20,49 @@ Ofrece un ecosistema completo para *Single Page Applications* (SPAs) enfocándos
 - 📦 **Componentes Modulares:** *Web Components* aislados y seguros utilizando CSS nativo (`@scope`), con un enfoque estricto en *Mobile First* y HTML Semántico.
 - ⚡ **Fetch Reactivo:** Gestión limpia y asíncrona de recursos (`loading`, `data`, `error`) con excelente Experiencia del Desarrollador (DX).
 
-## ⚙️ Inicio Rápido y Uso
+## ⚙️ Arquitectura y Roadmap (Estado del Proyecto)
 
-mita-dom no te obliga a configurar compiladores extraños. Puedes usarlo en proyectos existentes o crear uno nuevo desde cero.
+Actualmente, **mita-dom** es **Production Ready** para crear:
+- ✅ **SPA (Single Page Applications)**
+- ✅ Componentes Web Aislados (Microfrontends)
+- ✅ Dashboards con Estado Global
+
+🚧 **En Construcción (Futuro Roadmap)**:
+- ⏳ **SSR (Server-Side Rendering)**: MitaDOM actualmente opera al 100% en el cliente.
+- ⏳ **SSG (Static Site Generation)**: Renderizado estático en tiempo de build.
+- ⏳ **Arquitecturas Híbridas & PWA**: Soporte nativo para Service Workers y Offline-First.
 
 ---
+
+## 📚 Ecosistema de Documentación y Ruta de Aprendizaje
+
+Para dominar MitaDOM, te recomendamos leer la documentación en este orden:
+
+### 📖 Conceptos Base
+1. **[Filosofía y Misión](./FILOSOFIA.md)**: ¿Por qué creamos MitaDOM? ¿Qué problemas resuelve?
+2. **[Fundamentos Web y Git](./FUNDAMENTOS_WEB.md)**: Lo que debes saber sobre REST, Git, SPA y el DOM para no depender de frameworks.
+3. **[Fundamentos Reactivos](./FUNDAMENTOS.md)**: Aprende sobre Signals y Granular DOM sin VDOM.
+4. **[Arquitectura Core](./ARQUITECTURA.md)**: Polyfills, Memory Leaks, SEO y Seguridad.
+
+### 🧩 Componentes y UI
+5. **[Guía Maestra de Componentes](./GUIA_COMPONENTES.md)**: Los 4 pilares de Web Components en MitaDOM.
+6. **[Web Components Nativos (Props)](./WEB_COMPONENTS_NATIVOS.md)**: Cómo usar `observedAttributes` y propiedades nativas de clase en vez de directivas mágicas.
+7. **[Renderizado Condicional](./CONDITIONAL_RENDERING.md)**: Alternativas de Vanilla JS a `v-if`, `v-show` y `visibility`.
+8. **[Teleport y Portales](./TELEPORT.md)**: Patrones avanzados de comunicación entre componentes distantes.
+
+### 🌐 Ecosistema y Datos
+9. **[Enrutamiento SPA Avanzado](./ENRUTAMIENTO_SPA.md)**: La Navigation API moderna frente a History API, rutas dinámicas y Catch-All 404.
+10. **[Datos, APIs y LocalDB](./DATOS_Y_APIS.md)**: Fetch asíncrono, persistencia nativa con IndexedDB y Storage Adapter.
+11. **[Ecosistema Vite y HMR](./ECOSISTEMA_VITE.md)**: Hot Module Replacement sin recargas y configuración de SPA.
+12. **[Testing y UI](./GUIA_TESTING.md)**: Node:test para core, Vitest para componentes y Mita Profiler para 60FPS.
+
+### 🛠️ Práctica y Casos de Uso
+13. **[Ejemplos Prácticos (Learn MitaDOM)](./EJEMPLOS_PRACTICOS.md)**: ¿Vienes de React o Vue? Mira cómo hacer listas y toggles.
+14. **[Patrones Avanzados](./PATRONES_AVANZADOS.md)**: Arquitectura de Persistencia, y Guards.
+
+---
+
+## ⚙️ Inicio Rápido y Uso
 
 ## 🚨 Guía de Migración a v2.x (Breaking Changes)
 Si vienes de la versión `1.x`, debes tener en cuenta los siguientes cambios arquitectónicos introducidos en la **v2.1.6**:
@@ -55,6 +93,14 @@ Entra a la carpeta de tu proyecto e instala nuestra librería:
 ```bash
 cd mi-proyecto
 npm install mita-dom
+```
+
+### 3. Actualizar a la Última Versión
+
+Dado que iteramos constantemente con nuevas mejoras de rendimiento, si ya tenías instalada la librería en un proyecto antiguo y deseas actualizarla a la última versión (ej. migrar a la **v2.2.x**), simplemente ejecuta:
+
+```bash
+npm install mita-dom@latest
 ```
 
 ### 3. Uso Básico

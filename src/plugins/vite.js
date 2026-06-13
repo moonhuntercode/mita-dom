@@ -11,17 +11,15 @@ export function mitaHmrPlugin() {
         enforce: 'post',
         
         // Intercepta la recarga cuando cambian archivos .html
-        handleHotUpdate({ file, server }) {
+        handleHotUpdate({ file, server, modules }) {
             if (file.endsWith('.html')) {
-                server.ws.send({
-                    type: 'custom',
-                    event: 'mita:html-update',
-                    data: { file }
-                });
-                // Retornar [] previene que Vite haga un "Full Reload" (recarga de página)
-                // forzando a que MitaDOM maneje el parche granularmente en el cliente.
-                // Nota: Por ahora, delegamos a import.meta.hot.accept en los JS.
+                // En SPAs basadas en Web Components, un cambio en la plantilla HTML
+                // requiere redefinir el Custom Element o recargar la página.
+                // Disparamos un full-reload para garantizar consistencia.
+                server.ws.send({ type: 'full-reload', path: '*' });
+                return []; // Evita el pipeline por defecto que a veces ignora archivos ?raw
             }
+            return modules;
         },
         
         configResolved(config) {

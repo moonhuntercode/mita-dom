@@ -213,3 +213,60 @@ export class Signal {
         this.suscriptores.forEach(callback => callback(this._valor));
     }
 }
+
+/**
+ * 🧠 Computed Signal (Estado Derivado)
+ * Inspirado en Vue.js (computed) y SolidJS (createMemo).
+ * Actúa como un caché matemático: solo recalcula su valor cuando el Signal Padre cambia.
+ * Ahorra CPU evitando cálculos pesados en cada renderizado.
+ */
+export class ComputedSignal extends Signal {
+    /**
+     * @param {Signal} parentSignal El signal base que se va a escuchar
+     * @param {(val: any) => any} computeFn Función pura que transforma el valor
+     */
+    constructor(parentSignal, computeFn) {
+        if (!(parentSignal instanceof Signal)) {
+            throw new Error('[ComputedSignal] El primer argumento debe ser una instancia de Signal.');
+        }
+        if (typeof computeFn !== 'function') {
+            throw new Error('[ComputedSignal] El segundo argumento debe ser una función pura.');
+        }
+
+        // Inicializamos con el valor calculado actual
+        super(computeFn(parentSignal.get()));
+        
+        this.parentSignal = parentSignal;
+        this.computeFn = computeFn;
+
+        // Cada vez que el padre cambia, recalculamos y notificamos a nuestros suscriptores
+        this._padreSuscripcion = (nuevoValorPadre) => {
+            const nuevoCalculo = this.computeFn(nuevoValorPadre);
+            // Usamos super.set() para bypassear nuestro propio bloqueo de solo-lectura
+            super.set(nuevoCalculo); 
+        };
+
+        this.parentSignal.suscribir(this._padreSuscripcion);
+    }
+
+    /**
+     * Bloqueamos las mutaciones directas. Un Computed es SIEMPRE de Solo Lectura.
+     */
+    set() {
+        console.warn('[ComputedSignal] No puedes mutar un estado computado directamente. Muta el Signal original.');
+        return false;
+    }
+
+    update() {
+        return this.set();
+    }
+
+    patch() {
+        return this.set();
+    }
+
+    destroy() {
+        this.parentSignal.desuscribir(this._padreSuscripcion);
+        super.destroy();
+    }
+}

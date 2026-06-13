@@ -12,7 +12,7 @@ export const rutaActual = new Signal('/');
 // Si estamos en un entorno de navegador (no Node.js durante los tests)
 if (typeof window !== 'undefined' && window.navigation) {
     // Inicializamos el Signal con la ruta actual al cargar la página
-    rutaActual.value = new URL(window.navigation.currentEntry?.url || window.location.href).pathname;
+    rutaActual.set(new URL(window.navigation.currentEntry?.url || window.location.href).pathname);
 
     // Escuchamos el evento nativo 'navigate' de la Navigation API
     window.navigation.addEventListener('navigate', (event) => {
@@ -25,13 +25,17 @@ if (typeof window !== 'undefined' && window.navigation) {
             event.intercept({
                 handler() {
                     // Actualizamos el Signal. Todos los componentes suscritos reaccionarán.
-                    rutaActual.value = urlDestino.pathname;
+                    rutaActual.set(urlDestino.pathname);
                 }
             });
         }
     });
 } else if (typeof window !== 'undefined') {
-    console.warn('mita-dom: Tu navegador no soporta la Navigation API. El enrutamiento SPA no está disponible.');
+    // Si estamos en un entorno de test (JSDOM), no mostramos el warning para no ensuciar la consola
+    const isTestEnv = window.navigator && window.navigator.userAgent && window.navigator.userAgent.includes('jsdom');
+    if (!isTestEnv) {
+        console.warn('mita-dom: Tu navegador no soporta la Navigation API. El enrutamiento SPA no está disponible.');
+    }
 }
 
 /**

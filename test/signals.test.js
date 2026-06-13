@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { Signal } from '../src/core/signals.js';
+import { Signal, ComputedSignal } from '../src/core/signals.js';
 
 test('El Signal inicializa y devuelve su valor correctamente', (t) => {
     const estado = new Signal(10);
@@ -141,4 +141,45 @@ test('Signal usa StorageAdapter para persistencia', (t) => {
     // 3. Debe borrar en destroy
     s2.destroy();
     assert.strictEqual(mockStorage.data['test_key'], undefined);
+});
+
+// ==========================================
+// TESTS PARA ComputedSignal (ROBADO DE VUE)
+// ==========================================
+
+test('ComputedSignal deriva y memoriza el estado correctamente', (t) => {
+    const parent = new Signal(10);
+    const doble = new ComputedSignal(parent, (val) => val * 2);
+    
+    assert.strictEqual(doble.get(), 20);
+
+    // Al mutar el padre, el hijo se computa automáticamente
+    parent.set(50);
+    assert.strictEqual(doble.get(), 100);
+});
+
+test('ComputedSignal previene mutación directa', (t) => {
+    const parent = new Signal(10);
+    const doble = new ComputedSignal(parent, (val) => val * 2);
+
+    const muto = doble.set(50);
+    assert.strictEqual(muto, false); // Bloqueado
+    assert.strictEqual(doble.get(), 20); // Mantuvo su valor derivado
+});
+
+test('ComputedSignal notifica a sus propios suscriptores', (t) => {
+    const parent = new Signal(2);
+    const cuadrado = new ComputedSignal(parent, (val) => val * val);
+
+    let notificado = 0;
+    cuadrado.suscribir((val) => {
+        notificado = val;
+    });
+
+    // Suscripción inicial ejecuta sincrónicamente
+    assert.strictEqual(notificado, 4);
+
+    parent.set(5);
+    // Notificación automática
+    assert.strictEqual(notificado, 25);
 });
