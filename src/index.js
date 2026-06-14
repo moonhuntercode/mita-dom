@@ -14,4 +14,12 @@ export { sanitizarTexto } from './seguridad.js';
 // 3. Plugins y DX
 export { mitaHmrPlugin } from './plugins/vite.js';
 
-// Componentes movidos a proyectos de ejemplo
+// 4. Utilidades de DX y Telemetría
+export { checkMitaDomVersion } from './core/versionCheck.js';
+
+// Ejecutar silenciosamente la verificación al iniciar el DOM
+import { checkMitaDomVersion } from './core/versionCheck.js';
+if (typeof window !== 'undefined') {
+  // Retrasamos unos segundos para no afectar el LCP (Time to Interactive)
+  setTimeout(() => checkMitaDomVersion(), 3000);
+}
