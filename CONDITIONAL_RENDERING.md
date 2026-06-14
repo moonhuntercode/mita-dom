@@ -12,15 +12,30 @@ Es la estrategia **más rápida y eficiente**. El elemento HTML siempre existe e
 
 ### Ejemplo:
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoLocal } from 'mita-dom';
 
-const mostrarModal = new Signal(false);
+const mostrarModal = crearEstadoLocal(false);
 
 // En tu método iniciarLogica():
 const $modal = this.querySelector('.mi-modal');
 
 mostrarModal.suscribir(visible => {
   $modal.style.display = visible ? 'block' : 'none';
+});
+```
+
+### Ejemplo Avanzado: Botón de Cerrar Sidebar
+Puedes combinar múltiples condiciones, como un estado global y el tamaño de la ventana (`window.innerWidth`), para mostrar un botón condicionalmente (Renderizado Responsive Condicional):
+
+```javascript
+import { estadoSidebar } from '../../store/layoutStore.js';
+
+const $btnCerrar = this.querySelector('#btn-cerrar-sidebar');
+
+estadoSidebar.suscribir(({ abierto }) => {
+    // Solo mostrar el botón "✕ Cerrar" si el menú está abierto Y estamos en vista móvil
+    const esMobile = window.innerWidth < 715;
+    $btnCerrar.style.display = (abierto && esMobile) ? 'block' : 'none';
 });
 ```
 

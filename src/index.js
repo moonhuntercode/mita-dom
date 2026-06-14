@@ -4,7 +4,7 @@
  */
 
 // 1. Motor Lógico (Signals, Router, Resources)
-export { Signal, ComputedSignal } from './core/signals.js';
+export { Signal, ComputedSignal, crearEstadoGlobal, crearEstadoLocal } from './core/signals.js';
 export { rutaActual, navegarA } from './core/router.js';
 export { crearRecurso } from './core/resource.js';
 

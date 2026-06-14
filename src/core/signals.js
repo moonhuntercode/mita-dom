@@ -270,3 +270,49 @@ export class ComputedSignal extends Signal {
         super.destroy();
     }
 }
+
+// ==========================================
+// 🚀 DX API (Developer Experience)
+// ==========================================
+
+/**
+ * Crea un estado global.
+ * Ideal para compartir datos entre múltiples componentes (ej. Sesión, Tema, Configuración).
+ * Provee feedback visual en consola para facilitar el debugging.
+ * 
+ * @param {any} valorInicial 
+ * @param {Object} [options={}] Opciones de Signal (ej. persistKey, onMutate)
+ * @returns {Signal}
+ */
+export function crearEstadoGlobal(valorInicial, options = {}) {
+    const opts = { ...options };
+    const onMutateOriginal = opts.onMutate;
+    
+    opts.onMutate = (nuevo, viejo) => {
+        console.info(`🌍 [MitaDOM] Estado Global Mutado con éxito:`, nuevo);
+        if (onMutateOriginal) onMutateOriginal(nuevo, viejo);
+    };
+    
+    return new Signal(valorInicial, opts);
+}
+
+/**
+ * Crea un estado local.
+ * Ideal para uso efímero dentro de un solo componente web (ej. contadores, formularios).
+ * Provee feedback visual en consola para facilitar el debugging.
+ * 
+ * @param {any} valorInicial 
+ * @param {Object} [options={}] Opciones de Signal
+ * @returns {Signal}
+ */
+export function crearEstadoLocal(valorInicial, options = {}) {
+    const opts = { ...options };
+    const onMutateOriginal = opts.onMutate;
+    
+    opts.onMutate = (nuevo, viejo) => {
+        console.info(`🏠 [MitaDOM] Estado Local Mutado con éxito:`, nuevo);
+        if (onMutateOriginal) onMutateOriginal(nuevo, viejo);
+    };
+    
+    return new Signal(valorInicial, opts);
+}

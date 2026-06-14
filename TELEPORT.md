@@ -49,3 +49,46 @@ rutaActual.suscribir(ruta => {
 - **Cero Reflows Extremos**: No insertamos ni eliminamos componentes completos del DOM, solo ocultamos visualmente con CSS (`display: none`), lo que toma `0ms`.
 - **Desacoplamiento Absoluto**: El Emisor y el Receptor no necesitan saber de la existencia del otro.
 - **Testabilidad**: Puedes probar la lógica mutando directamente `estadoDocActivo.set('nuevo')` sin necesidad de simular clics en el DOM.
+
+---
+
+## 🪟 Teleport Físico (DOM Injection)
+
+A veces sí es estrictamente necesario sacar un elemento del árbol DOM de tu componente para evitar problemas de `z-index` o recortes por `overflow: hidden`. Un ejemplo clásico es un **Modal** o el **Backdrop oscuro** de un menú lateral (`<mita-sidebar>`).
+
+En lugar de usar un pseudo-elemento de framework, en **MitaDOM** aplicamos inyección directa del Light DOM en el ciclo de vida del componente:
+
+```javascript
+import { MitaElement, crearEstadoGlobal } from 'mita-dom';
+
+export const estadoSidebar = crearEstadoGlobal({ abierto: false });
+
+export class MitaSidebar extends MitaElement {
+    async render() {
+        this.innerHTML = `<aside id="sidebar">Menú Lateral</aside>`;
+        
+        // 🚀 PATRÓN TELEPORT
+        // Creamos el backdrop y lo inyectamos DIRECTAMENTE en el body, 
+        // escapando del encapsulamiento de este componente.
+        this.backdrop = document.createElement('div');
+        this.backdrop.className = 'vt-backdrop';
+        document.body.appendChild(this.backdrop);
+        
+        // Reactividad
+        estadoSidebar.suscribir(({ abierto }) => {
+            if (abierto) this.backdrop.classList.add('open');
+            else this.backdrop.classList.remove('open');
+        });
+    }
+
+    disconnectedCallback() {
+        // Limpieza obligatoria del Teleport al desmontar
+        if (this.backdrop && this.backdrop.parentNode) {
+            this.backdrop.parentNode.removeChild(this.backdrop);
+        }
+        super.disconnectedCallback();
+    }
+}
+```
+
+Esta técnica es 100% nativa, fácil de entender y extremadamente eficiente.

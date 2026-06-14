@@ -11,13 +11,13 @@ Esta guía te enseñará cómo administrar la Memoria, el Estado Global y Local 
 ### 1. Estado Local (Atado al Componente)
 Se crea en el `constructor()` del Web Component. Nace y muere con la instancia.
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoLocal } from 'mita-dom';
 
 export class MiComponente extends HTMLElement {
   constructor() {
     super();
     // Instancia local
-    this.estadoLocal = new Signal({ contador: 0 });
+    this.estadoLocal = crearEstadoLocal({ contador: 0 });
   }
 }
 ```
@@ -26,8 +26,8 @@ export class MiComponente extends HTMLElement {
 Se crea en un archivo separado (ej. `src/store/global.js`) y se exporta. Sobrevive a la destrucción de los componentes.
 ```javascript
 // src/store/global.js
-import { Signal } from 'mita-dom';
-export const sessionActual = new Signal({ usuario: null, token: null });
+import { crearEstadoGlobal } from 'mita-dom';
+export const sessionActual = crearEstadoGlobal({ usuario: null, token: null });
 ```
 
 ---
@@ -89,8 +89,9 @@ disconnectedCallback() {
     sessionActual.desuscribir(this._callbackGlobal);
   }
   
-  // Opcional: El Estado Local es recogido por el Garbage Collector automáticamente, 
-  // pero es buena práctica limpiarlo si tienes eventos pesados.
+  // OBLIGATORIO: Destrucción total (CRUD: Delete) del Estado Local
+  // Esto libera los suscriptores internos y limpia la memoria según las Web APIs de JS
+  this.estadoLocal.destroy();
 }
 ```
 

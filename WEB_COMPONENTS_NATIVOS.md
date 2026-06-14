@@ -90,13 +90,13 @@ iniciarLogica() {
 No todos los datos vienen de afuera. A veces el componente es dueño de su propio estado (por ejemplo, saber si está "expandido" o "colapsado"). Para esto usamos los `Signals` internos:
 
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoLocal } from 'mita-dom';
 
 export class MiAcordeon extends MitaElement {
   constructor() {
     super();
     // Estado local: Vivirá y morirá con el componente
-    this.estadoExpandido = new Signal(false);
+    this.estadoExpandido = crearEstadoLocal(false);
   }
 
   iniciarLogica() {
@@ -112,6 +112,13 @@ export class MiAcordeon extends MitaElement {
     this.estadoExpandido.suscribir(estaAbierto => {
       $contenido.style.display = estaAbierto ? 'block' : 'none';
     });
+  }
+
+  // Las Web APIs de JavaScript nos obligan a limpiar la memoria
+  disconnectedCallback() {
+    super.disconnectedCallback?.();
+    // Destrucción CRUD completa del estado local para prevenir Memory Leaks
+    this.estadoExpandido.destroy(); 
   }
 }
 ```

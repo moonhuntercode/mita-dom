@@ -10,11 +10,11 @@ MitaDOM elimina por completo el Virtual DOM. No hay algoritmos de reconciliació
 En librerías tradicionales (React), un cambio de estado fuerza a todo el componente (y a sus hijos) a re-evaluarse. En MitaDOM, el estado vive de forma independiente del ciclo de renderizado.
 
 ### El patrón Pub/Sub Reactivo
-Cuando declaras un Signal, estás creando una bóveda de datos que notifica a sus suscriptores *solo cuando el valor realmente cambia*.
+Cuando declaras un Estado, estás creando una bóveda de datos que notifica a sus suscriptores *solo cuando el valor realmente cambia*.
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoLocal } from 'mita-dom';
 
-const contador = new Signal(0);
+const contador = crearEstadoLocal(0);
 
 // Suscripción atómica
 contador.suscribir((nuevoValor) => {
@@ -35,19 +35,21 @@ Si tienes una lista de 10,000 elementos y mutas uno, solo ese nodo específico d
 
 ## 3. Estados Locales vs. Globales
 
-### Estado Local
-Vive dentro del ciclo de vida de un Web Component. Se usa para controlar la UI interna de ese componente (ej. un input, un contador).
+### Estado Local (`crearEstadoLocal`)
+Vive dentro del ciclo de vida de un Web Component. Se usa para controlar la UI interna de ese componente (ej. un input, un contador). Al usar `crearEstadoLocal` obtienes feedback automático en consola con el prefijo `🏠 [MitaDOM] Estado Local Mutado con éxito`.
 ```javascript
+import { crearEstadoLocal } from 'mita-dom';
+
 export class MiBoton extends MitaElement {
   constructor() {
     super();
-    this.estadoHover = new Signal(false); // Se destruye cuando el botón desaparece
+    this.estadoHover = crearEstadoLocal(false); // Se destruye cuando el botón desaparece
   }
 }
 ```
 
-### Estado Global (Store)
-Se crea en un archivo `.js` separado (ej. `src/store/userStore.js`) y se exporta. **Es el corazón de MitaDOM para compartir datos entre componentes**.
+### Estado Global (`crearEstadoGlobal` o Store)
+Se crea en un archivo `.js` separado (ej. `src/store/userStore.js`) y se exporta. Al mutarse, genera un log `🌍 [MitaDOM] Estado Global Mutado con éxito`. **Es el corazón de MitaDOM para compartir datos entre componentes**.
 - Evita el *Prop Drilling* (pasar variables de padre a hijo a nieto).
 - Habilita patrones como los *Portales* (ver `TELEPORT.md`).
 
