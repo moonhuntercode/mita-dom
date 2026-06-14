@@ -1,6 +1,7 @@
 {
   "name": "mita-dom",
-  "version": "2.3.1",
+  "version": "2.3.2",
+  "homepage": "https://github.com/moonhuntercode/mita-dom",
   "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
   "main": "./dist/mita-dom.js",
@@ -20,6 +21,8 @@
     "src",
     "mita-dom.d.ts",
     "*.md",
+    "docs",
+    "changelogs",
     "LICENSE"
   ],
   "private": false,
