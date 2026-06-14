@@ -39,7 +39,23 @@ npm run test:ui
 
 ---
 
-## 👁️ 3. Testing Manual y de Rendimiento (Mita Profiler)
+## 👁️ 3. Tests Manuales y End-to-End (E2E) <a name="tests-manuales"></a>
+
+El Testing automatizado (Unitario/Integración) prueba las funciones lógicas aisladas, pero no siempre garantiza que el flujo de usuario sea impecable. Para ello, necesitamos Pruebas Manuales o E2E.
+
+### 👥 Pruebas Manuales Estratégicas
+En MitaDOM, sugerimos ejecutar el siguiente flujo manual antes de cada lanzamiento:
+1. **Prueba de Rutas (Enrutamiento SPA)**: Carga tu SPA (`npm run dev`), e intenta acceder directamente desde la barra de direcciones a `/` , `/docs` , `/acerca` y a una `/ruta-que-no-existe`. Confirma que el **404 Catch-All** se dispare.
+2. **Prueba de Persistencia**: Visita una página que mute un Estado Global (ej. `<demo-estados>`). Cambia el valor. Refresca el navegador por completo (`F5`). El valor debe mantenerse intacto gracias al `StorageAdapter` (localStorage/IndexedDB).
+3. **Prueba de Desconexión (Memory Leak Check)**: Ve de una página pesada a otra. Abre las DevTools de Chrome, haz un "Garbage Collection" manual, y valida en la pestaña `Memory` que los nodos del DOM fueron destruidos. Los Web Components nativos, cuando se elimina su contenedor (Ej. `<mita-router>`), llaman automáticamente a `disconnectedCallback()`.
+
+### 🤖 Pruebas End-to-End (Cypress / Playwright)
+Dado que MitaDOM produce elementos 100% nativos (`<tu-componente>`), no requiere de plugins extraños o workarounds de selectores como ocurre con los frameworks de Virtual DOM.
+- Cualquier test de Cypress (Ej. `cy.get('tu-componente').shadow().find('button').click()`) funcionará nativamente.
+
+---
+
+## ⚡ 4. Testing de Rendimiento (Mita Profiler)
 
 Aparte del testing automatizado, construimos el **Mita Profiler**, un widget visual que flota en tu aplicación en modo desarrollo.
 

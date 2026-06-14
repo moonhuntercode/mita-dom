@@ -161,5 +161,45 @@ export class PanelDatos extends MitaElement {
 }
 ```
 
-## 🧠 Reflexión de Arquitecto
-La "Directiva vs VDOM" es una falsa dicotomía impuesta por los frameworks pesados. El API del DOM moderno (HTML5) ya incluye métodos ultra-optimizados (`.style.display` o `innerHTML`). Al combinarlos con la reactividad de los Signals, logramos el mismo resultado de los frameworks, pero permitiendo al desarrollador entender exactamente **cuándo, cómo y por qué** se destruye la memoria.
+## 4. Renderizado con `<template>` (Técnica Avanzada de Clonación)
+Si el fragmento HTML que necesitas inyectar condicionalmente es complejo y repetitivo, no uses `innerHTML` (ya que el navegador debe parsear el string una y otra vez). Usa la etiqueta nativa `<template>`.
+
+- **Ventajas**: El navegador pre-parsea el contenido del template UNA SOLA VEZ. Inyectar clones es rapidísimo.
+- **Cuándo usarlo**: Tablas condicionales, listas de componentes que se muestran u ocultan.
+
+```javascript
+const template = document.getElementById('mi-template-pesado');
+const $contenedor = this.querySelector('#contenedor');
+
+estadoLocal.suscribir(visible => {
+    if (visible) {
+        // Clonar el contenido del template (true = clonación profunda)
+        const clone = template.content.cloneNode(true);
+        $contenedor.appendChild(clone);
+    } else {
+        $contenedor.innerHTML = ''; // Limpiar
+    }
+});
+```
+
+## 🧠 Reflexión de Arquitecto: DevOps, SEO y Rendimiento
+La "Directiva vs VDOM" es una falsa dicotomía impuesta por los frameworks pesados de los años 2010. El API del DOM moderno (HTML5) ya incluye métodos ultra-optimizados (`.style.display` o `innerHTML`). Al combinarlos con la reactividad de los Signals, logramos el mismo resultado de los frameworks, pero permitiendo al desarrollador entender exactamente **cuándo, cómo y por qué** se destruye la memoria.
+
+### Lo Malo de otros Frameworks y Librerías:
+1. **La Pesadilla del DevOps (CI/CD)**: Frameworks como React, Next.js o Angular requieren miles de dependencias en `node_modules`. Esto destruye los tiempos de build en tus pipelines de DevOps, aumentando costos de servidores en la nube y ralentizando el ciclo de entrega. MitaDOM se instala y compila en milisegundos.
+2. **Penalización Severa en SEO**: El "Virtual DOM" pesa decenas de Kilobytes. Cuando un usuario (o el robot de Google) visita tu página, el navegador tiene que descargar JavaScript masivo, bloquear el hilo principal (Main Thread) para parsearlo, y luego ejecutar un algoritmo de reconciliación. Esto retrasa brutalmente el *Time to Interactive (TTI)* y el *First Contentful Paint (FCP)*. MitaDOM genera HTML nativo inmediato sin capas intermedias.
+3. **Consumo Innecesario de Batería**: En móviles de gama baja, iterar árboles gigantescos en memoria en cada *render* drena la batería y genera lentitud ("jank" o tartamudeo en las animaciones).
+
+### El Futuro de la Web es Nativo
+Como Ingenieros de Software, debemos evitar la "sobre-ingeniería". Abstracciones pesadas tenían sentido cuando los navegadores eran incompatibles entre sí. Hoy, el desarrollo web avanza gracias a los estándares:
+- **Navigation API**: Intercepta cambios de ruta a nivel del navegador de forma segura, eliminando la necesidad de monstruosos Routers en JavaScript (como `react-router`).
+- **Temporal API** (Futuro cercano): Una API nativa de JavaScript revolucionaria para manejar fechas y zonas horarias, que eliminará la necesidad de descargar inmensas librerías como `moment.js` o `date-fns`.
+- **Web Components**: Código verdaderamente encapsulado que funciona en *cualquier* entorno.
+
+En MitaDOM construimos sobre los hombros de gigantes (los navegadores modernos), en lugar de intentar reemplazarlos.
+
+## Conclusión Técnica: ¿Cuál elegir?
+- Si el elemento es **ligero** y cambia frecuentemente (ej. Tooltips, Dropdowns): Usa **1. Ocultamiento CSS (`display: none`)**.
+- Si el elemento afecta a la estructura animada o debe reservar espacio: Usa **2. Ocultamiento de Visibilidad (`visibility: hidden`)**.
+- Si el elemento es **pesado** (ej. Vistas completas, Videos, Mapas) y cambia poco: Usa **3. Inyección / Destrucción del DOM**.
+- Si el elemento es **pesado** pero se inyecta frecuentemente en listas: Usa **4. Renderizado con `<template>`**.

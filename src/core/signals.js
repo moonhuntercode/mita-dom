@@ -215,22 +215,22 @@ export class Signal {
 }
 
 /**
- * 🧠 Computed Signal (Estado Derivado)
+ * 🧠 SignalDerivado (Estado Derivado o Calculado)
  * Inspirado en Vue.js (computed) y SolidJS (createMemo).
  * Actúa como un caché matemático: solo recalcula su valor cuando el Signal Padre cambia.
  * Ahorra CPU evitando cálculos pesados en cada renderizado.
  */
-export class ComputedSignal extends Signal {
+export class SignalDerivado extends Signal {
     /**
      * @param {Signal} parentSignal El signal base que se va a escuchar
      * @param {(val: any) => any} computeFn Función pura que transforma el valor
      */
     constructor(parentSignal, computeFn) {
         if (!(parentSignal instanceof Signal)) {
-            throw new Error('[ComputedSignal] El primer argumento debe ser una instancia de Signal.');
+            throw new Error('[SignalDerivado] El primer argumento debe ser una instancia de Signal.');
         }
         if (typeof computeFn !== 'function') {
-            throw new Error('[ComputedSignal] El segundo argumento debe ser una función pura.');
+            throw new Error('[SignalDerivado] El segundo argumento debe ser una función pura.');
         }
 
         // Inicializamos con el valor calculado actual
@@ -250,19 +250,25 @@ export class ComputedSignal extends Signal {
     }
 
     /**
-     * Bloqueamos las mutaciones directas. Un Computed es SIEMPRE de Solo Lectura.
+     * @override
+     * Bloqueamos la mutación manual. Un Signal Derivado es de "Solo Lectura" (Read-Only).
      */
     set() {
-        console.warn('[ComputedSignal] No puedes mutar un estado computado directamente. Muta el Signal original.');
-        return false;
+        throw new Error('[SignalDerivado] Es de solo lectura. Su valor se deriva automáticamente del padre.');
     }
 
+    /**
+     * @override
+     */
     update() {
-        return this.set();
+        throw new Error('[SignalDerivado] Es de solo lectura. Su valor se deriva automáticamente del padre.');
     }
 
+    /**
+     * @override
+     */
     patch() {
-        return this.set();
+        throw new Error('[SignalDerivado] Es de solo lectura. Su valor se deriva automáticamente del padre.');
     }
 
     destroy() {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { Signal, ComputedSignal } from '../src/core/signals.js';
+import { Signal, SignalDerivado } from '../src/core/signals.js';
 
 test('El Signal inicializa y devuelve su valor correctamente', (t) => {
     const estado = new Signal(10);
@@ -144,12 +144,12 @@ test('Signal usa StorageAdapter para persistencia', (t) => {
 });
 
 // ==========================================
-// TESTS PARA ComputedSignal (ROBADO DE VUE)
+// TESTS PARA SignalDerivado (ROBADO DE VUE)
 // ==========================================
 
-test('ComputedSignal deriva y memoriza el estado correctamente', (t) => {
+test('SignalDerivado deriva y memoriza el estado correctamente', (t) => {
     const parent = new Signal(10);
-    const doble = new ComputedSignal(parent, (val) => val * 2);
+    const doble = new SignalDerivado(parent, (val) => val * 2);
     
     assert.strictEqual(doble.get(), 20);
 
@@ -158,18 +158,19 @@ test('ComputedSignal deriva y memoriza el estado correctamente', (t) => {
     assert.strictEqual(doble.get(), 100);
 });
 
-test('ComputedSignal previene mutación directa', (t) => {
+test('SignalDerivado previene mutación directa', (t) => {
     const parent = new Signal(10);
-    const doble = new ComputedSignal(parent, (val) => val * 2);
+    const doble = new SignalDerivado(parent, (val) => val * 2);
 
-    const muto = doble.set(50);
-    assert.strictEqual(muto, false); // Bloqueado
+    assert.throws(() => {
+        doble.set(50);
+    }, /Es de solo lectura/);
     assert.strictEqual(doble.get(), 20); // Mantuvo su valor derivado
 });
 
-test('ComputedSignal notifica a sus propios suscriptores', (t) => {
+test('SignalDerivado notifica a sus propios suscriptores', (t) => {
     const parent = new Signal(2);
-    const cuadrado = new ComputedSignal(parent, (val) => val * val);
+    const cuadrado = new SignalDerivado(parent, (val) => val * val);
 
     let notificado = 0;
     cuadrado.suscribir((val) => {

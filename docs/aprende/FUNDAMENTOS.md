@@ -9,20 +9,33 @@ MitaDOM elimina por completo el Virtual DOM. No hay algoritmos de reconciliació
 ## 1. La Revolución de los Signals
 En librerías tradicionales (React), un cambio de estado fuerza a todo el componente (y a sus hijos) a re-evaluarse. En MitaDOM, el estado vive de forma independiente del ciclo de renderizado.
 
-### El patrón Pub/Sub Reactivo
-Cuando declaras un Estado, estás creando una bóveda de datos que notifica a sus suscriptores *solo cuando el valor realmente cambia*.
-```javascript
-import { crearEstadoLocal } from 'mita-dom';
+### Anatomía Interna de un Signal
+Bajo el capó, un `Signal` de MitaDOM no es solo un contenedor de variables, es un sistema robusto:
+1. **Suscripciones Seguras (`Set`)**: Los suscriptores (callbacks) se almacenan en un objeto nativo `Set()`. Esto garantiza matemáticamente que una misma función de actualización no se pueda registrar dos veces, evitando memory leaks y renders dobles.
+2. **Inmutabilidad Defensiva (`Proxy`/Spread)**: MitaDOM clona tus objetos cuando se devuelven vía `.get()`. Esto previene mutaciones "silenciosas". Nadie puede cambiar una propiedad del objeto sin pasar por `.set()` o `.patch()`, lo que garantiza que los suscriptores siempre se enteren del cambio.
+3. **Guardias (Interceptors)**: Opcionalmente, un Signal puede inicializarse con una función `guard`. Antes de que la mutación se apruebe, el Guard la valida (ej. comprobar autenticación o tipos de datos). Si falla, la mutación se descarta, haciendo de MitaDOM un framework muy seguro.
 
-const contador = crearEstadoLocal(0);
+```javascript
+import { Signal } from 'mita-dom/core/signals.js';
+
+const contadorSeguro = new Signal(0, {
+    // Un Guard para evitar números negativos
+    guard: (nuevo, actual) => {
+        if (nuevo < 0) {
+            console.warn("No se permiten negativos");
+            return false; // Bloquea la mutación
+        }
+        return true; // Aprueba la mutación
+    }
+});
 
 // Suscripción atómica
-contador.suscribir((nuevoValor) => {
+contadorSeguro.suscribir((nuevoValor) => {
   document.getElementById('display').textContent = nuevoValor;
 });
 
 // Mutación (dispara la actualización en 0 milisegundos)
-contador.set(1); 
+contadorSeguro.set(1); 
 ```
 
 ---

@@ -10,6 +10,9 @@
       "types": "./mita-dom.d.ts",
       "default": "./dist/mita-dom.js"
     },
+    "./docs/aprende/*.md": "./docs/aprende/*.md",
+    "./docs/referencia/*.md": "./docs/referencia/*.md",
+    "./changelogs/*.md": "./changelogs/*.md",
     "./*.md": "./*.md"
   },
   "files": [
@@ -26,7 +29,8 @@
     "test": "node --test --test-reporter=spec test/*.test.js",
     "test:vitest": "vitest run",
     "test:ui": "vitest --ui",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "changelog": "node scripts/generar-changelog.js"
   },
   "devDependencies": {
     "@vitest/ui": "^4.1.8",
