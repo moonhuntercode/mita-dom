@@ -21,9 +21,9 @@ Imagina un estado global que guarda un arreglo de 10,000 usuarios, y necesitas r
 
 Con `ComputedSignal`:
 ```javascript
-import { Signal, ComputedSignal } from 'mita-dom';
+import { crearEstadoLocal, ComputedSignal } from 'mita-dom';
 
-const estadoUsuarios = new Signal([{ id: 1, activo: true }, ...]);
+const estadoUsuarios = crearEstadoLocal([{ id: 1, activo: true }, ...]);
 
 // Esto es un CACHÉ MATEMÁTICO. Solo se ejecuta si estadoUsuarios cambia.
 const usuariosActivos = new ComputedSignal(estadoUsuarios, (usuarios) => {
@@ -61,8 +61,8 @@ Para evitar errores humanos, hemos creado un Linter Inteligente (AST Parser) nat
 ### La Regla: `mita-no-duplicate-persist-keys`
 Si dos desarrolladores crean Signals distintos pero le asignan el mismo `persistKey`:
 ```javascript
-const s1 = new Signal(0, { persistKey: 'mita_contador' });
-const s2 = new Signal(0, { persistKey: 'mita_contador' }); // ESLint lanzará ERROR aquí
+const s1 = crearEstadoGlobal(0, { persistKey: 'mita_contador' });
+const s2 = crearEstadoGlobal(0, { persistKey: 'mita_contador' }); // ESLint lanzará ERROR aquí
 ```
 El Linter detendrá la compilación en seco, previniendo Fugas de Memoria y Colisiones en IndexedDB o LocalStorage antes de que lleguen a producción.
 

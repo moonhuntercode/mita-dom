@@ -77,3 +77,32 @@ rutaActual.suscribir(ruta => {
 
 > [!TIP]
 > **Reflexión de Arquitectura**: En React o Vue, te enseñan que las "Rutas" son componentes JSX/HTML. En MitaDOM te devolvemos la verdad: las rutas son simplemente una cadena de texto (String). Un "Enrutador" no es más que un `switch/if` que evalúa ese string y decide qué ocultar o destruir en el DOM.
+
+---
+
+## 4. Despliegue en Servidores Estáticos (Vercel, Netlify) y Errores 404
+
+Un problema extremadamente común al desplegar una SPA (Single Page Application) es que la navegación interna (`/perfil`, `/docs`) funciona perfectamente cuando haces clic en los enlaces, **pero si recargas la página (F5) o entras directamente a esa URL**, el servidor te devuelve un `404: NOT_FOUND`.
+
+### ¿Por qué sucede esto?
+Porque el enrutamiento es **Client-Side** (lo maneja JavaScript en el navegador). El servidor físico (como Vercel) no tiene una carpeta llamada `perfil` ni un archivo `perfil/index.html`. Solo tiene un único archivo raíz: `/index.html`. Cuando el navegador le pide la ruta `/perfil` al servidor, el servidor falla.
+
+### La Solución (Rewrites)
+Debemos decirle al servidor: *"Oye, si un usuario pide CUALQUIER ruta, no busques carpetas. Simplemente devuélvele el `index.html` y deja que el Router de MitaDOM (JS) decida qué mostrar."*
+
+**Para Vercel:**
+Crea un archivo llamado `vercel.json` en la raíz de tu proyecto con esta configuración de rutas seguras. Esta configuración utiliza `handle: filesystem` para evitar bucles infinitos (Memory Safe) asegurando que si un archivo físico (como una imagen, CSS o el mismo index.html) existe, Vercel lo entregue directamente sin volver a reescribirlo:
+```json
+{
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
+}
+```
+
+**Para Netlify:**
+Crea un archivo `public/_redirects` con el contenido:
+```text
+/*    /index.html   200
+```

@@ -37,9 +37,9 @@ export const sessionActual = crearEstadoGlobal({ usuario: null, token: null });
 Puedes leer el estado de dos formas: **Síncrona** o **Reactiva**.
 
 ### 1. Lectura Síncrona (Snapshot)
-Si solo necesitas saber el valor en un instante (ej. al enviar un formulario), lee la propiedad `.value`.
+Si solo necesitas saber el valor en un instante (ej. al enviar un formulario), lee a través del método `.get()`.
 ```javascript
-const nombre = this.estadoLocal.value.nombre;
+const nombre = this.estadoLocal.get().nombre;
 ```
 
 ### 2. Lectura Reactiva (Suscripción)
@@ -65,14 +65,18 @@ connectedCallback() {
 ❌ **Forma Incorrecta (Mutación impura):**
 ```javascript
 // Vite y MitaDOM no detectarán el cambio porque la referencia de memoria es la misma.
-this.estadoLocal.value.contador += 1; 
+const estadoObj = this.estadoLocal.get();
+estadoObj.contador += 1; 
 ```
 
-✅ **Forma Correcta (Inmutabilidad):**
+✅ **Forma Correcta (Usando las utilidades CRUD de MitaDOM):**
 ```javascript
-// Reemplazamos el objeto por uno nuevo. Esto dispara el ciclo reactivo.
-const estadoAnterior = this.estadoLocal.value;
-this.estadoLocal.value = { ...estadoAnterior, contador: estadoAnterior.contador + 1 };
+// Opción A: Reemplazo total con .set()
+const estadoAnterior = this.estadoLocal.get();
+this.estadoLocal.set({ ...estadoAnterior, contador: estadoAnterior.contador + 1 });
+
+// Opción B (Recomendada): Usar .patch() para mergear propiedades automáticamente
+this.estadoLocal.patch({ contador: estadoAnterior.contador + 1 });
 ```
 
 ---
@@ -104,3 +108,67 @@ Tal como lo verás en la arquitectura avanzada, nunca deberías hacer `console.l
 // Ejemplo de Telemetría al Update
 Logger.info('Usuario mutó el Signal del Carrito', { items: 5 });
 ```
+
+---
+
+## 🌍 Arquitectura de Estados Globales (Ejemplo de Producción)
+Cuando tu app crece, necesitarás comunicar componentes lejanos. Aquí tienes un ejemplo **Codebase Snapshot** de cómo estructurar tus archivos usando **solo Estados Globales**:
+
+### 1. Crear el Store Global
+Ubicación: `src/store/authStore.js`
+```javascript
+import { crearEstadoGlobal } from 'mita-dom';
+
+// Exportamos un estado global con persistencia para que sobreviva recargas (Local Storage)
+export const estadoAuth = crearEstadoGlobal({
+    usuario: null,
+    logeado: false
+}, { persistKey: 'mita_auth_session' });
+```
+
+### 2. Componente que MUTA el estado global (Header/Login)
+```javascript
+import { MitaElement } from 'mita-dom';
+import { estadoAuth } from '../store/authStore.js';
+
+export class LoginForm extends MitaElement {
+    async render() {
+        this.innerHTML = `<button id="btn-login">Iniciar Sesión</button>`;
+        this.querySelector('#btn-login').addEventListener('click', () => {
+            // El estado global muta!
+            estadoAuth.patch({ usuario: 'Victor', logeado: true });
+        });
+    }
+}
+```
+
+### 3. Componente que REACCIONA al estado global (Sidebar/Perfil)
+```javascript
+import { MitaElement } from 'mita-dom';
+import { estadoAuth } from '../store/authStore.js';
+
+export class Sidebar extends MitaElement {
+    async render() {
+        this.innerHTML = `<div id="welcome"></div>`;
+    }
+
+    connectedCallback() {
+        super.connectedCallback?.();
+        
+        // Reaccionamos en tiempo real, desde cualquier parte del DOM
+        this.subAuth = (auth) => {
+            this.querySelector('#welcome').textContent = auth.logeado 
+                ? \`Hola, \${auth.usuario}!\` 
+                : 'Por favor, inicia sesión';
+        };
+        estadoAuth.suscribir(this.subAuth);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback?.();
+        // Liberar la memoria global es OBLIGATORIO
+        estadoAuth.desuscribir(this.subAuth);
+    }
+}
+```
+*Este patrón garantiza que 10, 20 o 100 componentes puedan estar sincronizados en 0 milisegundos sin necesidad de pasar atributos HTML o Props gigantes entre componentes.*

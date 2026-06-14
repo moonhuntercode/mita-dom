@@ -67,7 +67,7 @@ Para dominar MitaDOM, te recomendamos leer la documentación en este orden:
 ## 🚨 Guía de Migración a v2.x (Breaking Changes)
 Si vienes de la versión `1.x`, debes tener en cuenta los siguientes cambios arquitectónicos introducidos en la **v2.1.6**:
 
-1. **Eliminación de `estadoAppGlobal`**: El core del framework ya no exporta estados globales prefabricados. Ahora tú debes crear tus propias instancias en tu aplicación: `const miEstado = new Signal(0)`.
+1. **Eliminación de `estadoAppGlobal`**: El core del framework ya no exporta estados globales prefabricados. Ahora tú debes crear tus propias instancias en tu aplicación utilizando las factorías de Experiencia del Desarrollador (DX): `const miEstado = crearEstadoGlobal(0)`. *Nota: la clase base `new Signal(0)` sigue siendo totalmente soportada como la primitiva de bajo nivel para compatibilidad hacia atrás.*
 2. **Nueva API CRUD para Signals**: Las mutaciones directas (`estado.value = 10`) han sido deprecadas. Ahora debes usar `.get()`, `.set()`, `.update()`, `.patch()` y `.reset()`.
 3. **Persistencia y Arquitectura Avanzada**: El constructor de `Signal` ahora acepta un objeto de opciones para Inmutabilidad y Adaptadores de Bases de Datos (`storageAdapter`).
 4. **Mita Vite Plugin**: Se incluyó `mitaHmrPlugin()` para facilitar el Granular HMR en tus proyectos de Vite.
@@ -108,10 +108,10 @@ npm install mita-dom@latest
 mita-dom es modular, solo importas lo que necesitas. Aquí un ejemplo rápido usando *Signals* y el *Router*:
 
 ```javascript
-import { Signal, rutaActual, navegarA } from 'mita-dom';
+import { crearEstadoGlobal, rutaActual, navegarA } from 'mita-dom';
 
-// Crear estado con persistencia e inmutabilidad
-const estadoGlobal = new Signal({ contador: 0 }, { 
+// Crear estado global con telemetría automática, persistencia e inmutabilidad
+const estadoGlobal = crearEstadoGlobal({ contador: 0 }, { 
   immutable: true,
   persistKey: 'mi_app_estado'
 });
@@ -130,13 +130,13 @@ mita-dom está escrita en Vanilla JS, pero **incluye nativamente sus archivos de
 Si usas TypeScript en tu proyecto, disfrutarás de autocompletado estricto y soporte para genéricos de inmediato:
 
 ```typescript
-import { Signal, crearRecurso } from 'mita-dom';
+import { crearEstadoLocal, crearRecurso } from 'mita-dom';
 
-// TypeScript inferirá estrictamente que este Signal solo acepta números
-const contador = new Signal<number>(0);
+// TypeScript inferirá estrictamente que este estado solo acepta números
+const contador = crearEstadoLocal<number>(0);
 
 // Forzará errores en tiempo de compilación si intentas algo inválido:
-// contador.value = "hola"; // ❌ Error TS: Type 'string' is not assignable to type 'number'
+// contador.set("hola"); // ❌ Error TS: Type 'string' is not assignable to type 'number'
 ```
 
 ### 3. Ejemplos y Entorno de Desarrollo

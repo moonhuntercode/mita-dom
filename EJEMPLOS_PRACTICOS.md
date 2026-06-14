@@ -25,8 +25,8 @@ const products = [
 export class DemoShoppingList extends MitaElement {
   constructor() {
     super();
-    // 1. Estado reactivo: Filtro actual
-    this.filtroActivo = new Signal('todas');
+    // Creamos el estado local de la pestaña activa
+    this.filtroActivo = crearEstadoLocal('todas');
     
     // 2. Computed: Reacciona automáticamente si "filtroActivo" cambia
     this.productosFiltrados = new ComputedSignal(this.filtroActivo, (filtro) => {
@@ -83,7 +83,8 @@ export class MiBoton extends MitaElement {
   async render() {
     this.innerHTML = `<button id="btn-magico">Ocultar</button>`;
     
-    this.estadoOculto = new Signal(false);
+    // Estado local para el toggle
+    this.estadoOculto = crearEstadoLocal(false);
     const $btn = this.querySelector('#btn-magico');
 
     $btn.addEventListener('click', () => {

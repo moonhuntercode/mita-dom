@@ -15,8 +15,9 @@ En lugar de crear un elemento `<teleport>`, en MitaDOM **elevamos el estado a un
 
 1. **Creamos un Store Global:**
 ```javascript
-import { Signal } from 'mita-dom';
-export const estadoDocActivo = new Signal('readme');
+import { crearEstadoGlobal } from 'mita-dom';
+
+export const estadoDocActivo = crearEstadoGlobal('readme');
 ```
 
 2. **El "Emisor" (El Menú)**

@@ -1,5 +1,5 @@
 // @ts-check
-import { Signal } from './signals.js';
+import { crearEstadoGlobal } from './signals.js';
 
 /**
  * Motor de Enrutamiento moderno basado en `window.navigation`
@@ -7,7 +7,7 @@ import { Signal } from './signals.js';
  */
 
 // Signal global que contiene la ruta actual de la aplicación
-export const rutaActual = new Signal('/');
+export const rutaActual = crearEstadoGlobal('/');
 
 // Si estamos en un entorno de navegador (no Node.js durante los tests)
 if (typeof window !== 'undefined' && window.navigation) {

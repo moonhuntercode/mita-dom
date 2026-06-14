@@ -21,14 +21,13 @@ Al carecer de *Virtual DOM*, MitaDOM no destruye y recrea todo el árbol de HTML
 Aquí realizamos **Renderizado Condicional Quirúrgico**. Si tienes que mostrar u ocultar elementos, debes mutar sus clases CSS o nodos de texto de forma precisa usando un *Signal Local*:
 
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoLocal, MitaElement } from 'mita-dom';
 
 export class MiBoton extends MitaElement {
-  async render() {
-    this.innerHTML = `<button id="btn-magico">🙈 Ocultar</button>`;
-    
-    // 1. Instanciamos Estado Local
-    this.estadoOculto = new Signal(false);
+  constructor() {
+    super();
+    // 2. Reactividad Granular: Creamos el estado
+    this.estadoOculto = crearEstadoLocal(false);
     const $btn = this.querySelector('#btn-magico');
 
     // 2. Escuchar evento y mutar estado

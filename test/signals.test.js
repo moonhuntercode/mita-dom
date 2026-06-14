@@ -183,3 +183,21 @@ test('ComputedSignal notifica a sus propios suscriptores', (t) => {
     // Notificación automática
     assert.strictEqual(notificado, 25);
 });
+
+// ==========================================
+// TESTS PARA FACTORÍAS (DX MEJORADA)
+// ==========================================
+
+import { crearEstadoLocal, crearEstadoGlobal } from '../src/core/signals.js';
+
+test('crearEstadoLocal retorna un Signal puro', (t) => {
+    const estado = crearEstadoLocal(10);
+    assert.strictEqual(estado instanceof Signal, true);
+    assert.strictEqual(estado.get(), 10);
+});
+
+test('crearEstadoGlobal retorna un Signal puro preconfigurado', (t) => {
+    const estado = crearEstadoGlobal({ nombre: 'Mita' });
+    assert.strictEqual(estado instanceof Signal, true);
+    assert.strictEqual(estado.get().nombre, 'Mita');
+});

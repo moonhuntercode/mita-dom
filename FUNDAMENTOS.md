@@ -62,7 +62,9 @@ En MitaDOM no usamos directivas mágicas en el HTML. Todo ocurre en JavaScript p
 ### Ocultamiento Visual (Estilo `v-show`)
 La forma más rápida de ocultar un elemento es mediante CSS. MitaDOM brilla aquí:
 ```javascript
-const mostrarAlerta = new Signal(false);
+import { crearEstadoLocal } from 'mita-dom';
+
+const mostrarAlerta = crearEstadoLocal(false);
 const $alerta = this.querySelector('.alerta');
 
 mostrarAlerta.suscribir(visible => {

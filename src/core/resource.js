@@ -1,5 +1,5 @@
 // @ts-check
-import { Signal } from './signals.js';
+import { crearEstadoLocal } from './signals.js';
 
 /**
  * Crea un recurso reactivo a partir de una promesa o función asíncrona.
@@ -7,22 +7,22 @@ import { Signal } from './signals.js';
  * @param {() => Promise<any>} funcionFetch
  */
 export function crearRecurso(funcionFetch) {
-    const data = new Signal(null);
-    const loading = new Signal(true);
-    const error = new Signal(null);
+    const data = crearEstadoLocal(null);
+    const loading = crearEstadoLocal(true);
+    const error = crearEstadoLocal(null);
 
     // Lanzamos la promesa y actualizamos los Signals correspondientes
     Promise.resolve(funcionFetch())
         .then(resultado => {
-            data.value = resultado;
-            error.value = null;
+            data.set(resultado);
+            error.set(null);
         })
         .catch(err => {
-            error.value = err;
-            data.value = null;
+            error.set(err);
+            data.set(null);
         })
         .finally(() => {
-            loading.value = false;
+            loading.set(false);
         });
 
     return { data, loading, error };

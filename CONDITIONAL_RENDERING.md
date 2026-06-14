@@ -50,9 +50,9 @@ Hay un tercer caso de uso muy importante. Si usas `display: none`, el elemento d
 
 ### Ejemplo:
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoLocal } from 'mita-dom';
 
-const mostrarNotificacion = new Signal(false);
+const mostrarNotificacion = crearEstadoLocal(false);
 
 const $alerta = this.querySelector('.alerta');
 
@@ -71,12 +71,17 @@ Si tienes un componente muy pesado (Ej. un visualizador de mapas 3D) y no quiere
 La forma más agresiva y rápida de renderizar condicionalmente componentes masivos es manipular el HTML del contenedor.
 
 ```javascript
-const usuarioLogeado = new Signal(false);
+import { crearEstadoGlobal } from 'mita-dom';
+import { Logger } from '../utils/logger.js';
+
+const usuarioLogeado = crearEstadoGlobal(false);
 
 usuarioLogeado.suscribir(estaLogeado => {
   if (estaLogeado) {
+    Logger.info('Autenticación exitosa, inyectando Dashboard...');
     this.$contenedor.innerHTML = '<dashboard-privado></dashboard-privado>';
   } else {
+    Logger.warn('Sesión terminada, mostrando Login...');
     this.$contenedor.innerHTML = '<formulario-login></formulario-login>';
   }
 });
@@ -99,6 +104,61 @@ usuarioLogeado.suscribir(estaLogeado => {
     }
   }
 });
+```
+
+## 4. Renderizado Condicional con Feedback en la UI (UX Mejorada)
+Cuando realices una carga asíncrona (como conectarte a una API), la mejor práctica es mostrar *Feedback de UI* usando el renderizado condicional.
+
+### Ejemplo: Spinners y Alertas
+```javascript
+import { crearEstadoLocal, crearRecurso, MitaElement } from 'mita-dom';
+import { Logger } from '../utils/logger.js';
+
+export class PanelDatos extends MitaElement {
+    constructor() {
+        super();
+        this.recurso = crearRecurso(() => fetch('https://api.ejemplo.com/datos').then(r => r.json()));
+    }
+
+    async render() {
+        this.innerHTML = `
+            <div class="panel">
+                <div id="ui-feedback"></div>
+                <div id="ui-contenido" style="display: none;"></div>
+            </div>
+        `;
+
+        const $feedback = this.querySelector('#ui-feedback');
+        const $contenido = this.querySelector('#ui-contenido');
+
+        // Renderizado Condicional del Loading (Feedback visual y consola)
+        this.recurso.loading.suscribir(cargando => {
+            if (cargando) {
+                Logger.info('Cargando recursos remotos...');
+                $feedback.innerHTML = '<div class="spinner">⏳ Cargando...</div>';
+                $contenido.style.display = 'none';
+            }
+        });
+
+        // Renderizado Condicional del Error
+        this.recurso.error.suscribir(error => {
+            if (error) {
+                Logger.error('Fallo en la red detectado', error);
+                $feedback.innerHTML = `<div class="alerta-error">❌ No se pudieron cargar los datos</div>`;
+            }
+        });
+
+        // Renderizado Condicional del Éxito
+        this.recurso.data.suscribir(datos => {
+            if (datos) {
+                Logger.info('Datos renderizados exitosamente');
+                $feedback.innerHTML = ''; // Ocultar feedback
+                $contenido.style.display = 'block'; // Mostrar contenido
+                $contenido.innerHTML = `<pre>${JSON.stringify(datos, null, 2)}</pre>`;
+            }
+        });
+    }
+}
 ```
 
 ## 🧠 Reflexión de Arquitecto

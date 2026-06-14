@@ -6,13 +6,13 @@ MitaDOM abraza las características asíncronas modernas de JavaScript (`async/a
 No necesitas librerías como Axios o React Query. La API nativa `fetch` de HTML5 junto con un Signal local es suficiente para crear interfaces robustas que manejan estados de "Carga", "Error" y "Éxito".
 
 ```javascript
-import { Signal, MitaElement } from 'mita-dom';
+import { crearEstadoLocal, MitaElement } from 'mita-dom';
 
 export class ListaUsuarios extends MitaElement {
   constructor() {
     super();
-    // Signal que contiene el estado completo de la petición
-    this.estadoPeticion = new Signal({
+    // Signal local que contiene el estado completo de la petición
+    this.estadoPeticion = crearEstadoLocal({
       cargando: true,
       error: null,
       datos: []
@@ -72,9 +72,9 @@ MitaDOM ofrece persistencia automática en sus Signals mediante opciones de inic
 Cuando creas un Signal global, puedes pasarle la clave `persistKey`.
 
 ```javascript
-import { Signal } from 'mita-dom';
+import { crearEstadoGlobal } from 'mita-dom';
 
-const estadoCarrito = new Signal([], {
+const estadoCarrito = crearEstadoGlobal([], {
   persistKey: 'mita_spa_carrito',
   immutable: true // Recomendado para arrays complejos
 });
