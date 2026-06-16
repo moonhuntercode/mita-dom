@@ -210,7 +210,13 @@ export class Signal {
      * Notifica a todos los suscriptores.
      */
     notificar() {
-        this.suscriptores.forEach(callback => callback(this._valor));
+        this.suscriptores.forEach(callback => {
+            try {
+                callback(this._valor);
+            } catch (err) {
+                console.error('🔥 [MitaDOM Signal] Error fatal en un suscriptor. Aislamiento activado para proteger el resto de la aplicación.', err);
+            }
+        });
     }
 }
 
