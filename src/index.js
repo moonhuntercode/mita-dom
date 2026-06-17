@@ -3,10 +3,12 @@
  * mita-dom - Librería Principal
  */
 
-// 1. Motor Lógico (Signals, Router, Resources)
+// 1. Motor Lógico (Signals, Router, Resources, Components)
 export { Signal, SignalDerivado, crearEstadoGlobal, crearEstadoLocal } from './core/signals.js';
 export { rutaActual, navegarA } from './core/router.js';
 export { crearRecurso } from './core/resource.js';
+export { MitaElement } from './core/mitaElement.js';
+export { definirComponente } from './core/componentes.js';
 
 // 2. Utilidades de Seguridad
 export { sanitizarTexto } from './seguridad.js';

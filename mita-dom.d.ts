@@ -49,7 +49,38 @@ export interface Resource<T> {
   refetch: () => Promise<void>;
 }
 
-export function crearRecurso<T>(fetcherFn: () => Promise<T>): Resource<T>;
+// Componentes y Ciclo de Vida
+export class MitaElement extends HTMLElement {
+  constructor();
+  connectedCallback(): void;
+  disconnectedCallback(): void;
+  render?(): void;
+  alMontar?(): void;
+  alDesmontar?(): void;
+  fallbackUI?(error: Error): string;
+}
+
+/** Opciones para el estilo Vue Options API */
+export interface ComponentOptions<T = any> {
+  estado?: T | (() => T);
+  alMontar?: (this: HTMLElement & { estado: T }) => void;
+  alDesmontar?: (this: HTMLElement & { estado: T }) => void;
+  render?: (this: HTMLElement & { estado: T }, estado: T, elemento: HTMLElement) => string;
+}
+
+/** 
+ * Define un Web Component usando el paradigma Funcional (Composition) 
+ * o el paradigma de Opciones (Options API). 
+ */
+export function definirComponente(
+  etiqueta: string, 
+  setupFn: (elemento: HTMLElement) => () => string
+): void;
+
+export function definirComponente<T>(
+  etiqueta: string, 
+  opciones: ComponentOptions<T>
+): void;
 
 // Seguridad
 export function sanitizarTexto(htmlPeligroso: string): string;
