@@ -1,6 +1,6 @@
 // @ts-check
 // inicio file: src/core/versionCheck.js
-const currentVersion = '2.3.2'; // MitaDOM Semantic Version
+import { version as currentVersion } from '../../package.json';
 
 /**
  * Comprueba de forma asíncrona si existe una nueva versión de MitaDOM
