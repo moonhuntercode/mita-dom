@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Signal, ComputedSignal } from '../../src/core/signals.js';
+import { Signal, SignalDerivado } from '../../src/core/signals.js';
 
 describe('Reactividad Granular (DOM Testing con JSDOM)', () => {
     beforeEach(() => {
@@ -32,9 +32,9 @@ describe('Reactividad Granular (DOM Testing con JSDOM)', () => {
         expect(nodoTexto.textContent).toBe('Granular');
     });
 
-    it('El ComputedSignal se actualiza reactivamente en el DOM', () => {
+    it('El SignalDerivado se actualiza reactivamente en el DOM', () => {
         const visitas = new Signal(10);
-        const mensaje = new ComputedSignal(visitas, v => `Visitas: ${v}`);
+        const mensaje = new SignalDerivado(visitas, v => `Visitas: ${v}`);
         
         const h1 = document.createElement('h1');
         mensaje.suscribir(m => h1.textContent = m);

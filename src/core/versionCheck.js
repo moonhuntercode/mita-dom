@@ -12,12 +12,18 @@ export async function checkMitaDomVersion() {
   if (typeof window === 'undefined' || !window.fetch) return;
 
   try {
+    // AbortController para evitar que el fetch se cuelgue e interfiera con listeners asíncronos de Vite
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundos timeout
+
     // Evitamos bloquear el Hilo Principal y le damos una baja prioridad al request
     const response = await fetch('https://registry.npmjs.org/mita-dom', {
       method: 'GET',
       headers: { 'Accept': 'application/vnd.npm.install-v1+json' },
-      // mode: 'cors',
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) return;
 
@@ -45,10 +51,9 @@ export async function checkMitaDomVersion() {
     }
   } catch (err) {
     // Fallo silencioso. Es solo una utilidad DX, no debe bloquear la app si falla la red.
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === "development" && err.name !== 'AbortError') {
       console.debug("[MitaDOM VersionCheck] Error de red:", err);
     }
-
   }
 }
 
