@@ -1,21 +1,48 @@
-# Planificación: Lanzamiento mita-dom v1.0.0 (NPM)
+# Guía Definitiva: Publicación de MitaDOM (NPM + GitHub Releases)
 
-Este documento registra los ajustes estructurales realizados para preparar a mita-dom para su distribución global mediante NPM.
+Esta guía documenta el flujo oficial y estandarizado para publicar nuevas versiones de **mita-dom**, incluyendo el manejo de la Autenticación de Dos Pasos (OTP) y la creación automática de _Releases_ usando la GitHub CLI (`gh`).
 
-## 1. Empaquetado Predictivo (Vite)
+---
 
-Para distribuir una librería, los consumidores confían en que las rutas de los archivos sean estables. Hemos modificado la configuración de Rollup en Vite para deshabilitar los hashes dinámicos (ej: `lib-mita-a8b9c.js` -> `mita-dom.js`). Esto asegura que los *import statements* de los usuarios jamás se rompan.
+## Flujo de Trabajo Estandarizado (Release & Publish)
 
-## 2. Metadatos de Publicación (package.json)
+Cuando la arquitectura esté estable, todos los tests pasen y se haya documentado la versión, sigue estos 4 pasos en orden estricto desde tu terminal en la raíz de \`mita-dom\`:
 
-- Se eliminó la etiqueta `"private": true` para hacer el repositorio de código abierto.
-- Se introdujeron los campos `"exports"` y `"files"`, optimizando el peso de descarga del paquete al subir únicamente el código empaquetado en `/dist` y el código fuente en `/src`, excluyendo pruebas y carpetas temporales.
+### 1. Preparar la Versión y Changelog
+Asegúrate de haber incrementado la versión en tu \`package.json\`. Luego, generamos el changelog localmente:
+\`\`\`bash
+npm run changelog
+git add .
+git commit -m "chore(release): vX.X.X"
+\`\`\`
+*(Reemplaza X.X.X por tu versión, ej: v2.5.2)*
 
-## 3. Pruebas Aisladas (Mocks)
+### 2. Crear el Tag de Git
+Un Tag es indispensable para que GitHub reconozca en qué punto exacto del código se hace el release.
+\`\`\`bash
+git tag vX.X.X
+git push origin main --tags
+\`\`\`
 
-Se implementaron simuladores o dobles de prueba ("Mocks") para validar piezas de código atadas a APIs exclusivas del navegador:
+### 3. Crear el Release Oficial (GitHub CLI)
+En lugar de ir a la web de GitHub, utilizamos la CLI \`gh\` para adjuntar las notas de la versión (Changelog) directamente al Tag que acabamos de crear:
+\`\`\`bash
+# Reemplaza la ruta del changelog y el título por la versión correcta
+gh release create vX.X.X -F changelogs/2026-08-26-vX.X.X.md -t "vX.X.X - Título de la Versión"
+\`\`\`
+✅ *Resultado:* Un release oficial se genera en tu repositorio (con etiqueta verde "Latest").
 
-- **Mock de `window.navigation`**: Para simular rutas en nuestro router sin abrir un navegador real.
-- **Mock de `Element.setHTML()`**: Para verificar la sanitización nativa de XSS.
+### 4. Publicar en NPM (Manejo de OTP)
+Finalmente, subimos el empaquetado a NPM:
+\`\`\`bash
+npm publish
+\`\`\`
+> **⚠️ Atención (Seguridad NPM):** 
+> Si tu cuenta tiene 2FA (OTP) obligatorio para publicación, el comando pausará y mostrará un mensaje: \`npm error code EOTP\`.
+> 1. NPM imprimirá un enlace en la terminal (ej: \`https://www.npmjs.com/auth/cli/...\`).
+> 2. Haz `Ctrl + Click` para abrirlo en tu navegador.
+> 3. Completa la autenticación (usa tu App Authenticator).
+> 4. Una vez autorizado en la web, la terminal se reanudará automáticamente y el paquete estará ¡en vivo!
 
-Con esta planificación aseguramos que el empaquetado final es seguro, modular e infalible.
+---
+*MitaDOM Architecture - Mantenimiento de Paquetes Globales*
