@@ -1,5 +1,12 @@
 # Changelog de MitaDOM
 
+## [2.5.1] - 2026-08-26
+
+### 🛡️ Mantenibilidad y Soporte de Ejecución
+- **Hotfix: Compatibilidad con Node 24:** Se solucionó el error `ERR_IMPORT_ATTRIBUTE_MISSING` al importar `package.json`. Ahora se utiliza la sintaxis moderna `with { type: 'json' }` para pasar limpiamente la suite nativa de tests.
+- **Automatización de Seguridad:** Se introdujo un test de validación estricto (`test/version.test.js`) que bloquea el despliegue si el desarrollador modifica `package.json` pero olvida compilar la librería con Vite, evitando errores de sincronización de versión.
+- **Tolerancia a Fallos en SemVer:** La función de alerta `checkMitaDomVersion` ahora limpia etiquetas semánticas (`-beta`, `-rc`) antes de procesar cálculos matemáticos, previniendo falsos positivos de actualización.
+
 ## [2.4.0] - 2026-06-17
 
 ### 🔥 Hito Arquitectónico: La Era de la Longevidad y el DX Estricto

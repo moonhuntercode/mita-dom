@@ -1,6 +1,7 @@
 // @ts-check
 // inicio file: src/core/versionCheck.js
-import { version as currentVersion } from '../../package.json';
+import pkg from '../../package.json' with { type: 'json' };
+const currentVersion = pkg.version;
 
 /**
  * Comprueba de forma asíncrona si existe una nueva versión de MitaDOM
@@ -56,12 +57,19 @@ export async function checkMitaDomVersion() {
  * Retorna true si v1 > v2
  */
 function esVersionMayor(v1, v2) {
-  const p1 = v1.split('.').map(Number);
-  const p2 = v2.split('.').map(Number);
+  // Limpiamos sufijos como -beta, -rc para evitar errores de parseo (NaN)
+  const cleanV1 = v1.split('-')[0];
+  const cleanV2 = v2.split('-')[0];
+
+  const p1 = cleanV1.split('.').map(Number);
+  const p2 = cleanV2.split('.').map(Number);
 
   for (let i = 0; i < 3; i++) {
-    if (p1[i] > p2[i]) return true;
-    if (p1[i] < p2[i]) return false;
+    const n1 = isNaN(p1[i]) ? 0 : p1[i];
+    const n2 = isNaN(p2[i]) ? 0 : p2[i];
+    
+    if (n1 > n2) return true;
+    if (n1 < n2) return false;
   }
   return false;
 }
