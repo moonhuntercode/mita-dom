@@ -9,6 +9,17 @@ export { rutaActual, navegarA } from './core/router.js';
 export { crearRecurso } from './core/resource.js';
 export { MitaElement } from './core/mitaElement.js';
 export { definirComponente } from './core/componentes.js';
+export { MitaTween, Easings } from './core/mitaTween.js';
+export { MitaAnim } from './core/mitaAnim.js';
+export { MitaRouter } from './core/mitaRouter.js';
+
+// Auto-definir componentes del framework
+import { MitaRouter } from './core/mitaRouter.js';
+if (typeof customElements !== 'undefined') {
+  if (!customElements.get('mita-router')) {
+    customElements.define('mita-router', MitaRouter);
+  }
+}
 
 // 2. Utilidades de Seguridad
 export { sanitizarTexto } from './seguridad.js';

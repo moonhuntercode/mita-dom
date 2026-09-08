@@ -17,16 +17,17 @@ function deepFreeze(object) {
 
 /**
  * Motor Reactivo Granular Avanzado (Signals con CRUD, Auth y Telemetría)
+ * @template T
  */
 export class Signal {
     /**
-     * @param {any} valorInicial 
+     * @param {T} valorInicial 
      * @param {Object} options Opciones avanzadas de la arquitectura
      * @param {boolean} [options.immutable=false] Fuerza inmutabilidad con Object.freeze
      * @param {string} [options.persistKey=null] Key para persistir
      * @param {{ getItem: (key: string) => any, setItem: (key: string, val: string) => any, removeItem: (key: string) => any }} [options.storageAdapter=localStorage] Adaptador DB
-     * @param {Function} [options.guard] (newValue, oldValue) => boolean. Control de Acceso/Autorización
-     * @param {Function} [options.onMutate] Hook para Telemetría y Debug
+     * @param {Function} [options.guard] (newValue: T, oldValue: T) => boolean. Control de Acceso/Autorización
+     * @param {Function} [options.onMutate] (newValue: T, oldValue: T) => void Hook para Telemetría y Debug
      */
     constructor(valorInicial, options = {}) {
         this.options = {
@@ -97,6 +98,7 @@ export class Signal {
 
     /**
      * READ: Obtiene el valor actual. Si es inmutable, es seguro de leer.
+     * @returns {T} El valor reactivo actual
      */
     get() {
         return this._valor;
@@ -104,7 +106,7 @@ export class Signal {
 
     /**
      * UPDATE (Directo): Sobrescribe el estado con un nuevo valor.
-     * @param {any} nuevoValor 
+     * @param {T} nuevoValor El nuevo valor a establecer
      * @returns {boolean} true si mutó, false si fue bloqueado por Auth (guard)
      */
     set(nuevoValor) {
@@ -141,7 +143,8 @@ export class Signal {
 
     /**
      * UPDATE (Funcional): Ideal para contadores o arrays basado en estado anterior.
-     * @param {(estadoAnterior: any) => any} updaterFn 
+     * @param {(estadoAnterior: T) => T} updaterFn Función pura para mutar
+     * @returns {boolean} true si mutó exitosamente
      */
     update(updaterFn) {
         // Le pasamos un clon si es inmutable, o la ref si es mutable
@@ -190,7 +193,7 @@ export class Signal {
 
     /**
      * Suscribe una función para reaccionar a los cambios.
-     * @param {Function} callback 
+     * @param {(val: T) => void} callback Función ejecutada en cada cambio
      */
     suscribir(callback) {
         this.suscriptores.add(callback);
@@ -200,7 +203,7 @@ export class Signal {
 
     /**
      * Elimina una suscripción.
-     * @param {Function} callback 
+     * @param {(val: T) => void} callback Función previamente suscrita
      */
     desuscribir(callback) {
         this.suscriptores.delete(callback);
@@ -227,9 +230,10 @@ export class Signal {
  * Ahorra CPU evitando cálculos pesados en cada renderizado.
  */
 export class SignalDerivado extends Signal {
-    /**
-     * @param {Signal} parentSignal El signal base que se va a escuchar
-     * @param {(val: any) => any} computeFn Función pura que transforma el valor
+/**
+     * @template P, R
+     * @param {Signal<P>} parentSignal El signal base que se va a escuchar
+     * @param {(val: P) => R} computeFn Función pura que transforma el valor
      */
     constructor(parentSignal, computeFn) {
         if (!(parentSignal instanceof Signal)) {
@@ -288,14 +292,15 @@ export class SignalDerivado extends Signal {
 // ==========================================
 
 /**
- * Crea un estado global.
- * Ideal para compartir datos entre múltiples componentes (ej. Sesión, Tema, Configuración).
- * Provee feedback visual en consola para facilitar el debugging.
- * 
- * @param {any} valorInicial 
- * @param {Object} [options={}] Opciones de Signal (ej. persistKey, onMutate)
- * @returns {Signal}
- */
+     * Crea un estado global.
+     * Ideal para compartir datos entre múltiples componentes (ej. Sesión, Tema, Configuración).
+     * Provee feedback visual en consola para facilitar el debugging.
+     * 
+     * @template T
+     * @param {T} valorInicial El valor inicial del estado (puede ser de cualquier tipo)
+     * @param {Object} [options={}] Opciones de Signal (ej. persistKey, onMutate)
+     * @returns {Signal<T>} Instancia de Signal estricta
+     */
 export function crearEstadoGlobal(valorInicial, options = {}) {
     const opts = { ...options };
     const onMutateOriginal = opts.onMutate;
@@ -313,9 +318,10 @@ export function crearEstadoGlobal(valorInicial, options = {}) {
  * Ideal para uso efímero dentro de un solo componente web (ej. contadores, formularios).
  * Provee feedback visual en consola para facilitar el debugging.
  * 
- * @param {any} valorInicial 
+ * @template T
+ * @param {T} valorInicial El valor inicial del estado local
  * @param {Object} [options={}] Opciones de Signal
- * @returns {Signal}
+ * @returns {Signal<T>} Instancia de Signal local estricta
  */
 export function crearEstadoLocal(valorInicial, options = {}) {
     const opts = { ...options };

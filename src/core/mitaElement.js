@@ -4,6 +4,12 @@
  * Clase base MitaElement para crear Web Components Nativos con superpoderes.
  * Proporciona Error Boundaries (try/catch automático en render) y 
  * Telemetría básica (registro de performance).
+ * 
+ * @extends HTMLElement
+ * @property {() => void} [alMontar] Hook de ciclo de vida en español equivalente a connectedCallback
+ * @property {() => void} [alDesmontar] Hook de ciclo de vida en español equivalente a disconnectedCallback
+ * @property {() => void} [render] Método principal para pintar HTML, protegido por try/catch
+ * @property {(error: Error) => string} [fallbackUI] Función que devuelve el HTML a mostrar si `render` falla
  */
 export class MitaElement extends HTMLElement {
   constructor() {

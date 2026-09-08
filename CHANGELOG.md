@@ -1,8 +1,12 @@
 # Changelog de MitaDOM
 
-## [2.5.1] - 2026-08-26
+## [2.5.2] - 2026-08-26 (Release Oficial)
 
-### 🛡️ Mantenibilidad y Soporte de Ejecución
+### 🚀 Publicación y Seguridad en NPM (OTP)
+- **Despliegue Exitoso (v2.5.2):** La librería ha sido desplegada limpiamente a NPM usando GitHub CLI (`gh`) para el release y el flujo estándar de NPM.
+- **Log Histórico (Seguridad EOTP):** Se ha documentado oficialmente el manejo del error `npm error code EOTP (This operation requires a one-time password)` en la `GUIA_PUBLICACION`. En entornos automatizados o locales, NPM ahora exige apertura del navegador interactivo (2FA) para evitar la subida de código malicioso. Esto ha sido superado manualmente, certificando esta versión como 100% segura.
+
+### 🛡️ MitaDOM Core (Actualización a v2.5.1 previa consolidada)
 - **Hotfix: Compatibilidad con Node 24:** Se solucionó el error `ERR_IMPORT_ATTRIBUTE_MISSING` al importar `package.json`. Ahora se utiliza la sintaxis moderna `with { type: 'json' }` para pasar limpiamente la suite nativa de tests.
 - **Automatización de Seguridad:** Se introdujo un test de validación estricto (`test/version.test.js`) que bloquea el despliegue si el desarrollador modifica `package.json` pero olvida compilar la librería con Vite, evitando errores de sincronización de versión.
 - **Tolerancia a Fallos en SemVer:** La función de alerta `checkMitaDomVersion` ahora limpia etiquetas semánticas (`-beta`, `-rc`) antes de procesar cálculos matemáticos, previniendo falsos positivos de actualización.

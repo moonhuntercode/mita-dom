@@ -1,7 +1,27 @@
 {
   "name": "mita-dom",
-  "version": "2.5.2",
-  "homepage": "https://github.com/moonhuntercode/mita-dom",
+  "version": "2.5.3",
+  "homepage": "https://github.com/moonhuntercode/mita-dom#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moonhuntercode/mita-dom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/moonhuntercode/mita-dom/issues"
+  },
+  "author": "MoonHunterCode (Bolivia)",
+  "license": "MIT",
+  "keywords": [
+    "pwa",
+    "web-components",
+    "signals",
+    "reactivity",
+    "dom",
+    "vanillajs",
+    "mita",
+    "custom-elements"
+  ],
+  "sideEffects": false,
   "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
   "main": "./dist/mita-dom.js",
