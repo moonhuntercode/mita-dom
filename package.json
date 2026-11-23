@@ -1,6 +1,6 @@
 {
   "name": "mita-dom",
-  "version": "2.5.3",
+  "version": "2.7.0",
   "homepage": "https://github.com/moonhuntercode/mita-dom#readme",
   "repository": {
     "type": "git",
@@ -18,19 +18,23 @@
     "reactivity",
     "dom",
     "vanillajs",
-    "mita",
-    "custom-elements"
+    "light-dom",
+    "bolivia"
   ],
   "sideEffects": false,
   "description": "Librería Vanilla JS de alto rendimiento para Web Components nativos y reactividad granular por turnos (Mita).",
   "type": "module",
   "main": "./dist/mita-dom.js",
-  "types": "./mita-dom.d.ts",
+  "bin": {
+    "mita": "./bin/mita.js"
+  },
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./mita-dom.d.ts",
+      "types": "./types/index.d.ts",
       "default": "./dist/mita-dom.js"
     },
+    "./package.json": "./package.json",
     "./docs/aprende/*.md": "./docs/aprende/*.md",
     "./docs/referencia/*.md": "./docs/referencia/*.md",
     "./changelogs/*.md": "./changelogs/*.md",
@@ -38,9 +42,14 @@
   },
   "files": [
     "dist",
+    "bin",
+    "types",
     "src",
-    "mita-dom.d.ts",
+    "!src/svg/**",
+    "!src/**/*.test.js",
+    "!src/core/seguridad.js",
     "*.md",
+    "!LICENSE.md",
     "docs",
     "changelogs",
     "LICENSE"
@@ -48,34 +57,30 @@
   "private": false,
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/auto-docs.js",
     "build": "vite build",
+    "docs:auto": "node scripts/auto-docs.js",
     "test": "node --test --test-reporter=spec test/*.test.js",
     "test:vitest": "vitest run",
     "test:ui": "vitest --ui",
     "lint": "eslint .",
+    "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
+    "qa": "npm run docs:auto && npm run build && npm run lint && npm run lint:css && npm run test",
+    "release:check": "npm run qa && npm pack --dry-run",
+    "preview": "vite preview",
     "changelog": "node scripts/generar-changelog.js"
   },
   "devDependencies": {
     "@vitest/ui": "^4.1.8",
+    "esbuild": "^0.28.2",
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
+    "stylelint": "^17.15.0",
+    "stylelint-config-standard": "^40.0.0",
     "terser": "^5.48.0",
     "vite": "^8.0.12",
     "vitest": "^4.1.8"
-  },
-  "keywords": [
-    "web-components",
-    "signals",
-    "vanilla-js",
-    "light-dom",
-    "bolivia"
-  ],
-  "author": "victor code",
-  "license": "SEE LICENSE IN LICENSE.md",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/moonhuntercode/mita-dom.git"
   },
   "engines": {
     "node": ">=24.0.0"

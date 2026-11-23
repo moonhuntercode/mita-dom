@@ -57,3 +57,45 @@ test('Composition API: definirComponente maneja signals puros correctamente', (t
 
     assert.strictEqual(el.innerHTML, '<button>5</button>');
 });
+
+test('Error Boundary: MitaElement atrapa errores en render y muestra UI de fallback', (t) => {
+    class BotonRoto extends MitaElement {
+        render() {
+            throw new Error("Simulated Crash");
+        }
+    }
+    customElements.define('mi-boton-roto', BotonRoto);
+
+    const el = document.createElement('mi-boton-roto');
+    
+    // Suprimimos temporalmente el console.error para no ensuciar el log del test
+    const originalError = console.error;
+    console.error = () => {};
+    
+    document.body.appendChild(el); // dispara el render
+    
+    console.error = originalError;
+
+    // Comprobamos que el error fue atrapado y se inyectó el HTML del Error Boundary
+    assert.ok(el.innerHTML.includes('Algo salió mal dibujando este componente'));
+    assert.ok(el.innerHTML.includes('Simulated Crash'));
+});
+
+test('Async Render: MitaElement maneja renders asíncronos sin crashear', async (t) => {
+    class BotonAsync extends MitaElement {
+        async render() {
+            // Simulamos una tarea asíncrona
+            await new Promise(r => setTimeout(r, 10));
+            this.innerHTML = '<button>Async</button>';
+        }
+    }
+    customElements.define('mi-boton-async', BotonAsync);
+
+    const el = document.createElement('mi-boton-async');
+    document.body.appendChild(el);
+    
+    // Esperamos a que la promesa se resuelva
+    await new Promise(r => setTimeout(r, 20));
+    
+    assert.strictEqual(el.innerHTML, '<button>Async</button>');
+});
