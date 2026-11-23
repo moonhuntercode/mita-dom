@@ -39,11 +39,16 @@ if (typeof window !== 'undefined' && window.navigation) {
 }
 
 /**
- * Función helper para navegar programáticamente
+ * Función helper para navegar programáticamente con Graceful Fallback (Navigation API -> History API -> SSR Signal)
  * @param {string} ruta 
  */
 export function navegarA(ruta) {
     if (typeof window !== 'undefined' && window.navigation) {
         window.navigation.navigate(ruta);
+        return;
     }
+    if (typeof window !== 'undefined' && window.history && typeof window.history.pushState === 'function') {
+        window.history.pushState({}, '', ruta);
+    }
+    rutaActual.set(ruta);
 }

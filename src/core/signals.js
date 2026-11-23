@@ -1,6 +1,22 @@
 // @ts-check
 
 /**
+ * 📡 Pila interna para auto-rastreo de dependencias en `crearEfecto(fn)`.
+ * Permite que cualquier `signal.get()` ejecutado dentro de un efecto
+ * se suscriba automáticamente sin necesidad de listar dependencias a mano.
+ * @type {Array<{ ejecutar: Function, dependencias: Set<Signal<any>> }>}
+ */
+const pilaDeEfectos = [];
+
+/**
+ * 🗂️ Registro central de Estados Compartidos por nombre.
+ * Permite compartir datos entre componentes desacoplados (hermanos, modales,
+ * encabezados, paneles de administración) sin imports circulares.
+ * @type {Map<string, { signal: Signal<any>, nombre: string, descripcion: string, persistKey: string | null, reglas: string }>}
+ */
+const registroEstadosCompartidos = new Map();
+
+/**
  * 🛠️ Utilidad para congelación profunda (Immutabilidad recursiva)
  */
 function deepFreeze(object) {
@@ -20,6 +36,9 @@ function deepFreeze(object) {
  * @template T
  */
 export class Signal {
+    #valor;
+    #valorInicialOriginal;
+
     /**
      * @param {T} valorInicial 
      * @param {Object} options Opciones avanzadas de la arquitectura
@@ -39,7 +58,7 @@ export class Signal {
             ...options
         };
 
-        this._valorInicialOriginal = valorInicial;
+        this.#valorInicialOriginal = valorInicial;
         this.suscriptores = new Set();
 
         // 1. Persistencia (Usando Adapter)
@@ -65,7 +84,7 @@ export class Signal {
         }
 
         // 2. Inmutabilidad Inicial
-        this._valor = this._procesarInmutabilidad(valorInicial);
+        this.#valor = this._procesarInmutabilidad(valorInicial);
     }
 
     /**
@@ -98,10 +117,16 @@ export class Signal {
 
     /**
      * READ: Obtiene el valor actual. Si es inmutable, es seguro de leer.
+     * Si se invoca dentro de `crearEfecto(fn)`, registra automáticamente la dependencia.
      * @returns {T} El valor reactivo actual
      */
     get() {
-        return this._valor;
+        const efectoActivo = pilaDeEfectos[pilaDeEfectos.length - 1];
+        if (efectoActivo) {
+            this.suscriptores.add(efectoActivo.ejecutar);
+            efectoActivo.dependencias.add(this);
+        }
+        return this.#valor;
     }
 
     /**
@@ -111,28 +136,28 @@ export class Signal {
      */
     set(nuevoValor) {
         // 1. Autorización y Control de Acceso (Guard)
-        if (this.options.guard && !this.options.guard(nuevoValor, this._valor)) {
+        if (this.options.guard && !this.options.guard(nuevoValor, this.#valor)) {
             console.warn(`[Signal Auth] Mutación rechazada por Guard. Acción no autorizada.`);
             return false;
         }
 
-        if (this._valor !== nuevoValor) {
-            const oldValue = this._valor;
-            this._valor = this._procesarInmutabilidad(nuevoValor);
+        if (this.#valor !== nuevoValor) {
+            const oldValue = this.#valor;
+            this.#valor = this._procesarInmutabilidad(nuevoValor);
 
             // 2. Persistencia automática vía Adapter
             if (this.options.persistKey) {
                 const storage = this.options.storageAdapter || (typeof localStorage !== 'undefined' ? localStorage : null);
                 if (storage) {
                     try {
-                        storage.setItem(this.options.persistKey, JSON.stringify(this._valor));
+                        storage.setItem(this.options.persistKey, JSON.stringify(this.#valor));
                     } catch (e) {}
                 }
             }
 
             // 3. Telemetría / Debug
             if (this.options.onMutate) {
-                this.options.onMutate(this._valor, oldValue);
+                this.options.onMutate(this.#valor, oldValue);
             }
 
             // 4. Reactividad
@@ -149,8 +174,8 @@ export class Signal {
     update(updaterFn) {
         // Le pasamos un clon si es inmutable, o la ref si es mutable
         const prev = this.options.immutable 
-            ? (structuredClone ? structuredClone(this._valor) : JSON.parse(JSON.stringify(this._valor))) 
-            : this._valor;
+            ? (structuredClone ? structuredClone(this.#valor) : JSON.parse(JSON.stringify(this.#valor))) 
+            : this.#valor;
             
         const nextValue = updaterFn(prev);
         return this.set(nextValue);
@@ -162,7 +187,7 @@ export class Signal {
      * @returns {boolean} true si mutó
      */
     patch(partialValue) {
-        if (this._valor === null || typeof this._valor !== 'object' || Array.isArray(this._valor)) {
+        if (this.#valor === null || typeof this.#valor !== 'object' || Array.isArray(this.#valor)) {
             console.warn('[Signal] .patch() solo puede usarse en estados que sean Objetos Puros.');
             return false;
         }
@@ -173,7 +198,7 @@ export class Signal {
      * DELETE / RESET: Devuelve el estado a su valor de nacimiento.
      */
     reset() {
-        this.set(this._valorInicialOriginal);
+        this.set(this.#valorInicialOriginal);
     }
 
     /**
@@ -193,12 +218,25 @@ export class Signal {
 
     /**
      * Suscribe una función para reaccionar a los cambios.
+     * Retorna una función de limpieza (`desuscribir`) para liberar memoria fácilmente.
      * @param {(val: T) => void} callback Función ejecutada en cada cambio
+     * @returns {() => void} Función para cancelar esta suscripción
      */
     suscribir(callback) {
         this.suscriptores.add(callback);
         // Ejecución inmediata inicial para sincronizar el DOM con el estado
-        callback(this._valor);
+        callback(this.#valor);
+        return () => this.desuscribir(callback);
+    }
+
+    /**
+     * Crea un SignalDerivado (solo lectura) a partir de este Signal.
+     * @template R
+     * @param {(val: T) => R} computeFn Función pura que transforma el valor
+     * @returns {SignalDerivado} Nuevo signal derivado
+     */
+    derivar(computeFn) {
+        return new SignalDerivado(this, computeFn);
     }
 
     /**
@@ -210,18 +248,23 @@ export class Signal {
     }
 
     /**
-     * Notifica a todos los suscriptores.
+     * Notifica a todos los suscriptores sobre una copia estática del Set.
+     * Evita bucles infinitos cuando un efecto re-suscribe dependencias durante el recorrido.
      */
     notificar() {
-        this.suscriptores.forEach(callback => {
+        const suscriptoresActivos = Array.from(this.suscriptores);
+        suscriptoresActivos.forEach(callback => {
             try {
-                callback(this._valor);
+                callback(this.#valor);
             } catch (err) {
                 console.error('🔥 [MitaDOM Signal] Error fatal en un suscriptor. Aislamiento activado para proteger el resto de la aplicación.', err);
             }
         });
     }
 }
+
+// Bloqueamos el prototipo para prevenir Prototype Pollution (Seguridad en Memoria)
+Object.freeze(Signal.prototype);
 
 /**
  * 🧠 SignalDerivado (Estado Derivado o Calculado)
@@ -333,4 +376,141 @@ export function crearEstadoLocal(valorInicial, options = {}) {
     };
     
     return new Signal(valorInicial, opts);
+}
+
+/**
+ * ⚡ Crea un efecto reactivo con auto-rastreo de dependencias.
+ * Cualquier Signal leído con `.get()` dentro de `fn` re-ejecutará automáticamente
+ * este efecto cuando su valor cambie.
+ *
+ * @param {() => void} fn Función reactiva a ejecutar
+ * @returns {() => void} Función `detener()` para limpiar todas las suscripciones (0 memory leaks)
+ */
+export function crearEfecto(fn) {
+    if (typeof fn !== 'function') {
+        throw new Error('[MitaDOM] crearEfecto requiere una función válida.');
+    }
+
+    let activo = true;
+    /** @type {{ ejecutar: () => void, dependencias: Set<Signal<any>> }} */
+    const nodoEfecto = {
+        dependencias: new Set(),
+        ejecutar: () => {
+            if (!activo) return;
+            // Limpiamos dependencias previas para re-calcular en ramas condicionales
+            nodoEfecto.dependencias.forEach(dep => dep.desuscribir(nodoEfecto.ejecutar));
+            nodoEfecto.dependencias.clear();
+
+            pilaDeEfectos.push(nodoEfecto);
+            try {
+                fn();
+            } catch (err) {
+                console.error('🔥 [MitaDOM Efecto] Error ejecutando efecto reactivo:', err);
+            } finally {
+                pilaDeEfectos.pop();
+            }
+        }
+    };
+
+    nodoEfecto.ejecutar();
+
+    return function detenerEfecto() {
+        activo = false;
+        nodoEfecto.dependencias.forEach(dep => dep.desuscribir(nodoEfecto.ejecutar));
+        nodoEfecto.dependencias.clear();
+    };
+}
+
+/**
+ * 🤝 Crea o recupera un Estado Compartido con nombre explícito.
+ * Pensado para máxima claridad y legibilidad al compartir datos entre múltiples
+ * componentes (ej: Configuración de Empleos, Sesión Admin, Carrito).
+ *
+ * @template T
+ * @param {string} nombreUnico Identificador único y legible del estado (ej. 'empleos:config')
+ * @param {T} valorInicial Valor inicial si aún no existe en el registro
+ * @param {Object} [opciones={}] Opciones claras de comportamiento
+ * @param {boolean} [opciones.persistirLocal=false] Si es true, guarda automáticamente en localStorage
+ * @param {string} [opciones.persistKey] Clave personalizada en localStorage (sobreescribe persistirLocal)
+ * @param {string} [opciones.descripcion=''] Descripción legible para auditoría y panel Admin
+ * @param {string} [opciones.reglas=''] Reglas de negocio documentadas sobre quién puede mutar este estado
+ * @param {boolean} [opciones.immutable=false] Congela el estado con deepFreeze
+ * @param {Function} [opciones.guard] Función (nuevo, anterior) => boolean para controlar permisos
+ * @param {Function} [opciones.onMutate] Hook de telemetría al mutar
+ * @param {any} [opciones.storageAdapter] Adaptador de almacenamiento personalizado
+ * @returns {Signal<T>} Instancia compartida de Signal
+ */
+export function crearEstadoCompartido(nombreUnico, valorInicial, opciones = {}) {
+    if (!nombreUnico || typeof nombreUnico !== 'string') {
+        throw new Error('[MitaDOM] crearEstadoCompartido requiere un nombreUnico (string no vacío).');
+    }
+
+    const existente = registroEstadosCompartidos.get(nombreUnico);
+    if (existente) {
+        return existente.signal;
+    }
+
+    const persistKey = opciones.persistKey || (opciones.persistirLocal ? `mita_estado_${nombreUnico}` : null);
+    const signal = crearEstadoGlobal(valorInicial, {
+        immutable: opciones.immutable || false,
+        persistKey,
+        storageAdapter: opciones.storageAdapter || null,
+        guard: opciones.guard || null,
+        onMutate: opciones.onMutate || null
+    });
+
+    registroEstadosCompartidos.set(nombreUnico, {
+        signal,
+        nombre: nombreUnico,
+        descripcion: opciones.descripcion || 'Estado compartido sin descripción',
+        persistKey,
+        reglas: opciones.reglas || 'Sin restricciones específicas'
+    });
+
+    return signal;
+}
+
+/**
+ * 🔎 Recupera un Estado Compartido previamente registrado por su nombre.
+ *
+ * @param {string} nombreUnico Nombre con el que se creó el estado
+ * @returns {Signal<any> | null} El Signal compartido o null si no existe
+ */
+export function obtenerEstadoCompartido(nombreUnico) {
+    const entrada = registroEstadosCompartidos.get(nombreUnico);
+    if (!entrada) {
+        console.warn(`⚠️ [MitaDOM] No existe el estado compartido "${nombreUnico}". Créalo primero con crearEstadoCompartido().`);
+        return null;
+    }
+    return entrada.signal;
+}
+
+/**
+ * 📋 Lista todos los estados compartidos activos para inspección en Panel Admin / DevTools.
+ *
+ * @returns {Array<{ nombre: string, descripcion: string, reglas: string, persistKey: string | null, valorActual: any, suscriptores: number }>}
+ */
+export function listarEstadosCompartidos() {
+    return Array.from(registroEstadosCompartidos.values()).map((entrada) => ({
+        nombre: entrada.nombre,
+        descripcion: entrada.descripcion,
+        reglas: entrada.reglas,
+        persistKey: entrada.persistKey,
+        valorActual: entrada.signal.get(),
+        suscriptores: entrada.signal.suscriptores.size
+    }));
+}
+
+/**
+ * 🧹 Elimina un Estado Compartido del registro y limpia sus suscriptores.
+ * Útil en tests o al cerrar sesión administrativa.
+ *
+ * @param {string} nombreUnico Nombre del estado a eliminar
+ */
+export function eliminarEstadoCompartido(nombreUnico) {
+    const entrada = registroEstadosCompartidos.get(nombreUnico);
+    if (entrada) {
+        entrada.signal.destroy();
+        registroEstadosCompartidos.delete(nombreUnico);
+    }
 }

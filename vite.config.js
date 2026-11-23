@@ -15,9 +15,9 @@ export default defineConfig(({ command }) => {
                 name: 'mita-dom',
                 formats: ['es']
             },
-            // Keyword: 'terser'
-            // Justificación: Algoritmo de minificación que además ofusca nombres de variables, dificultando la ingeniería inversa.
-            minify: esProduccion ? 'terser' : false,
+            // Keyword: 'esbuild'
+            // Justificación: Algoritmo de minificación ultrarrápido (por defecto en Vite), que resuelve el warning de lentitud de terser.
+            minify: esProduccion ? 'esbuild' : false,
 
             // Keyword: rollupOptions
             // Justificación: Para librerías NPM necesitamos nombres de archivo deterministas y predecibles (sin hashes).
