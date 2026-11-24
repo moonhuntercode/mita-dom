@@ -53,56 +53,75 @@ function extraerExportsConDoc(contenido) {
 }
 
 function generarReferenciaAPI() {
-  const archivosCore = [
-    'src/core/signals.js',
-    'src/core/render.js',
-    'src/core/mitaElement.js',
-    'src/core/componentes.js',
-    'src/core/router.js',
-    'src/core/mitaRouter.js',
-    'src/core/resource.js',
-    'src/core/mitaAnim.js',
-    'src/core/mitaTween.js',
-    'src/core/ssr.js',
-    'src/core/rustGuard.js',
-    'src/core/propsYDefer.js',
-    'src/seguridad.js',
-    'src/utils/result.js',
-    'src/utils/chatGuard.js',
-    'src/utils/formBuilder.js',
-    'src/utils/consentimiento.js',
-    'src/utils/cliSimulator.js',
-    'src/utils/crudCategorias.js',
-    'src/utils/uiModeracionYComunidad.js',
-    'src/utils/fullstackYDevtools.js'
+  const categorias = [
+    {
+      titulo: '⚡ 1. Hooks / Signals y Reactividad Granular',
+      resumen: 'Equivalente a `useState`, `useMemo`, `useEffect`, `useContext` y `untrack` sin Virtual DOM.',
+      archivos: ['src/core/signals.js', 'src/core/render.js', 'src/core/resource.js']
+    },
+    {
+      titulo: '🧬 2. Componentes Nativos, Ciclo de Vida y Props/@defer',
+      resumen: 'Web Components Light DOM con ciclo de vida en español (`alCrear` → `render` → `alMontar` → `alCambiarProp` → `alDesmontar`), Props complejas y `@defer`.',
+      archivos: ['src/core/mitaElement.js', 'src/core/componentes.js', 'src/core/propsYDefer.js']
+    },
+    {
+      titulo: '🌐 3. Async Graph (Solid 2.0), Server Functions, Routing y SSR/Islands',
+      resumen: 'Promesas en el grafo reactivo, `live()` SSE, Optimistic Rollback, estrategias de render en 1 línea y Router SPA.',
+      archivos: ['src/core/asyncGraph.js', 'src/core/ssr.js', 'src/core/router.js', 'src/core/mitaRouter.js']
+    },
+    {
+      titulo: '🦀 4. Seguridad, Protección de Memoria (RustGuard) y Animaciones',
+      resumen: 'Borrow Checker inmutable (`&T`/`&mut T`), RAII Drop, sanitización XSS, `mitaResult` y animaciones nativas.',
+      archivos: ['src/core/rustGuard.js', 'src/seguridad.js', 'src/utils/result.js', 'src/core/mitaAnim.js', 'src/core/mitaTween.js']
+    },
+    {
+      titulo: '🛡️ 5. UI, Formularios, Moderación, Fullstack y DevTools',
+      resumen: 'FormBuilder Auth, Consentimiento, Chat Anti-Spam, Paginación, Moderación `"DC"`, CLI `npx mita`, Mita Doc y SemVer Advisor.',
+      archivos: [
+        'src/utils/chatGuard.js',
+        'src/utils/formBuilder.js',
+        'src/utils/consentimiento.js',
+        'src/utils/cliSimulator.js',
+        'src/utils/crudCategorias.js',
+        'src/utils/uiModeracionYComunidad.js',
+        'src/utils/fullstackYDevtools.js'
+      ]
+    }
   ];
 
   const secciones = [];
   const filasResumen = [];
 
-  for (const relPath of archivosCore) {
-    const absPath = path.join(ROOT, relPath);
-    if (!fs.existsSync(absPath)) continue;
+  for (const cat of categorias) {
+    const subSecciones = [];
+    for (const relPath of cat.archivos) {
+      const absPath = path.join(ROOT, relPath);
+      if (!fs.existsSync(absPath)) continue;
 
-    const contenido = fs.readFileSync(absPath, 'utf8');
-    const exportsEncontrados = extraerExportsConDoc(contenido);
-    if (exportsEncontrados.length === 0) continue;
+      const contenido = fs.readFileSync(absPath, 'utf8');
+      const exportsEncontrados = extraerExportsConDoc(contenido);
+      if (exportsEncontrados.length === 0) continue;
 
-    filasResumen.push(
-      `| \`${relPath}\` | ${exportsEncontrados.map((e) => `\`${e.nombre}\``).join(', ')} |`
-    );
+      filasResumen.push(
+        `| ${cat.titulo.split(' ')[1]} | \`${relPath}\` | ${exportsEncontrados.map((e) => `\`${e.nombre}\``).join(', ')} |`
+      );
 
-    const detalleModulo = exportsEncontrados
-      .map((exp) => {
-        const listaTags =
-          exp.etiquetas.length > 0
-            ? `\n${exp.etiquetas.map((t) => `- \`${t}\``).join('\n')}`
-            : '';
-        return `### \`${exp.tipo} ${exp.firma}\`\n\n${exp.descripcion}${listaTags}\n`;
-      })
-      .join('\n');
+      const detalleModulo = exportsEncontrados
+        .map((exp) => {
+          const listaTags =
+            exp.etiquetas.length > 0
+              ? `\n${exp.etiquetas.map((t) => `- \`${t}\``).join('\n')}`
+              : '';
+          return `#### \`${exp.tipo} ${exp.firma}\`\n\n${exp.descripcion}${listaTags}\n`;
+        })
+        .join('\n');
 
-    secciones.push(`## 📦 Módulo \`${relPath}\`\n\n${detalleModulo}`);
+      subSecciones.push(`### 📦 Módulo \`${relPath}\`\n\n${detalleModulo}`);
+    }
+
+    if (subSecciones.length > 0) {
+      secciones.push(`## ${cat.titulo}\n\n> ${cat.resumen}\n\n${subSecciones.join('\n')}`);
+    }
   }
 
   const markdown = [
@@ -111,18 +130,40 @@ function generarReferenciaAPI() {
     `- **Versión:** \`v${pkg.version}\``,
     `- **Fecha de Auto-Generación:** \`${FECHA_HOY}\``,
     `- **Comando:** \`npm run docs:auto\` (\`scripts/auto-docs.js\`)`,
+    `- **Guía Profunda + Equivalencias \`react.dev/reference/react\` + Glosario:** \`docs/referencia/REFERENCIA_COMPLETA_REACT_A_MITADOM_GLOSARIO_Y_PROFUNDIZACION_2026-11-23.md\``,
     '',
-    '> Este documento se regenera automáticamente leyendo los `export` y JSDoc reales de `src/`. No editar a mano.',
+    '> Este documento se regenera automáticamente leyendo los `export` y JSDoc reales de `src/` y está agrupado por categorías inspiradas en `react.dev/reference/react`.',
+    '',
+    '## 🧭 Mapa Rápido (React → MitaDOM)',
+    '',
+    '| Concepto (`react.dev/reference/react`) | Equivalente en MitaDOM |',
+    '| --- | --- |',
+    '| `useState(inicial)` | `crearEstadoLocal(inicial)` |',
+    '| `useMemo(() => ..., [deps])` | `signal.derivar(fn)` o `crearMemoAsincrono(async () => ...)` |',
+    '| `useEffect(() => ..., [deps])` | `crearEfecto(() => ...)` (auto-rastreo + `sinRastrear()`) |',
+    '| `useContext(Ctx)` | `crearEstadoCompartido(nombre, val)` + `obtenerEstadoCompartido(nombre)` |',
+    '| `useOptimistic` / `useActionState` | `crearEstadoOptimistaConRollback()` + `crearFuncionServidor()` |',
+    '| `<Suspense>` / `lazy()` | `renderizarVistaDiferida()` (`@defer`) + `crearMemoAsincrono()` |',
+    '| `ErrorBoundary` | `MitaElement` nativo (`fallbackUI(err)` + `alError(err, fase)`) |',
     '',
     '## 🗺️ Inventario de Módulos y Exports',
     '',
-    '| Archivo Fuente | Símbolos Públicos Exportados |',
-    '| --- | --- |',
+    '| Grupo | Archivo Fuente | Símbolos Públicos Exportados |',
+    '| --- | --- | --- |',
     ...filasResumen,
     '',
     '---',
     '',
-    ...secciones
+    ...secciones,
+    '',
+    '---',
+    '',
+    '## 🧠 Para Profundizar y Glosario Esencial',
+    '',
+    '- **Ciclo de Vida Completo (`MitaElement`):** `alCrear()` → `alAntesDeRenderizar()` → `render()` → `alMontar()` → `alCambiarProp()` → `alActualizar()` → Auto-Limpieza + `alDesmontar()`.',
+    '- **`sinRastrear(fn)` (`untrack`):** ejecuta lecturas/mutaciones internas sin registrar dependencias en `crearEfecto()`, eliminando bucles infinitos.',
+    '- **Light DOM + `@scope`:** 0 Virtual DOM y 0 Shadow DOM; el SEO, la accesibilidad y CSS3 nativo funcionan sin barreras.',
+    '- **Agent Repair Guide:** `skills/reactivity-diagnostics/SKILL.md` documenta cada código `[MITA_*]` para humanos y Agentes IA.'
   ].join('\n');
 
   const destino = path.join(ROOT, 'docs', 'referencia', 'AUTO_API_REFERENCIA.md');

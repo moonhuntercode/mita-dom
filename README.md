@@ -1,10 +1,10 @@
-# MitaDOM v2.7.0 🚀
+# MitaDOM v2.8.0 🚀
 
-MitaDOM es una librería hiper-ligera, sin dependencias de runtime, para crear **Web Components Nativos** usando JavaScript puro (Vanilla JS) con reactividad granular por Signals, protección de memoria estilo Rust (`rustGuard`), estrategias universales (`CSR`/`SSR`/`SSG`/`Hybrid`), `@defer`, `Signal Forms` y CLI (`npx mita`).
+MitaDOM es una librería hiper-ligera, sin dependencias de runtime, para crear **Web Components Nativos** usando JavaScript puro (Vanilla JS) con reactividad granular por Signals, ciclo de vida completo en español (`MitaElement`), Async Graph estilo Solid 2.0 (`crearMemoAsincrono`, `crearFuncionServidorEnVivo`), `linkedSignal`, `sinRastrear`, protección de memoria estilo Rust (`rustGuard`), estrategias universales en 1 línea (`CSR`/`SSR`/`SSG`/`Hybrid`/`Resumable`), `@defer`, `Signal Forms`, Subpath Exports, Agent Repair Guide (`skills/`) y CLI (`npx mita`).
 
-- 📚 **Documentación Oficial y 15 Laboratorios Interactivos:** [docs-mita-dom.vercel.app](https://docs-mita-dom.vercel.app/)
+- 📚 **Documentación Oficial y 16 Laboratorios Interactivos:** [docs-mita-dom.vercel.app](https://docs-mita-dom.vercel.app/)
 - 🛠️ **Guía de Contribución, SemVer y Release:** [CONTRIBUTING.md](./CONTRIBUTING.md)
-- 📝 **Changelog v2.7.0 (Antes vs Después):** [changelogs/2026-11-22-v2.7.0.md](./changelogs/2026-11-22-v2.7.0.md)
+- 📝 **Changelog v2.8.0 (Antes vs Después):** [changelogs/2026-11-23-v2.8.0.md](./changelogs/2026-11-23-v2.8.0.md)
 
 ```bash
 npm install mita-dom
@@ -25,8 +25,9 @@ En su lugar, promovemos el uso de **CSS `@scope`** (CSS3 Moderno) junto con **Li
 
 ## 📦 Guía de Buenas Prácticas y Reusabilidad
 
-### 1. La Tríada Modular (HTML, CSS, JS)
-Para que un componente sea **altamente re-usable**, nunca mezcles el HTML y el CSS dentro del JS. Usa Vite y la importación `?raw` para mantener la separación:
+### 1. La Tríada Modular (HTML, CSS, JS) y el Ciclo de Vida Completo
+
+Para que un componente sea **claro y 100% re-usable**, separa HTML (`?raw`), CSS (`@scope`) y JS, respetando el orden oficial de `MitaElement` (`alCrear` → `render` → `alMontar` → `alCambiarProp` → `alDesmontar`):
 
 ```js
 // mi-componente.js
@@ -35,28 +36,59 @@ import templateHtml from './mi-componente.html?raw';
 import './mi-componente.css';
 
 export class MiComponente extends MitaElement {
-  alMontar() {
-    this.estado = crearEstadoLocal(0);
-    this.render();
+  static get observedAttributes() {
+    return ['color', 'titulo'];
   }
 
+  // 1. Antes del DOM: inicializa Signals locales
+  alCrear() {
+    this.contador = crearEstadoLocal(0);
+  }
+
+  // 2. Pinta el HTML base una sola vez (protegido por Error Boundary)
   render() {
     this.innerHTML = templateHtml;
-    
-    // Leer Props dinámicamente
+  }
+
+  // 3. DOM ya listo: conecta Signals granulares y eventos (auto-limpiados al desmontar)
+  alMontar() {
     if (this.props.color) {
       this.querySelector('.titulo').style.color = this.props.color;
     }
+
+    // Mutación granular de solo el TextNode (sin re-escribir innerHTML)
+    this.vincularTexto(this.contador, '.valor', (n) => `Clics: ${n}`);
+
+    const onClick = () => this.contador.set(this.contador.get() + 1);
+    const btn = this.querySelector('.btn-sumar');
+    btn?.addEventListener('click', onClick);
+    this.registrarLimpieza(() => btn?.removeEventListener('click', onClick));
+  }
+
+  // 4. Reacción granular si cambia un atributo observado (camelCase automático)
+  alCambiarProp(prop, _antes, valorNuevo) {
+    if (prop === 'color' && this.querySelector('.titulo')) {
+      this.querySelector('.titulo').style.color = valorNuevo;
+    }
+  }
+
+  // 5. Opcional: limpieza adicional (las suscripciones registradas ya se limpiaron solas)
+  alDesmontar() {
+    this.contador.destroy();
   }
 }
 customElements.define('mi-componente', MiComponente);
 ```
 
-### 2. Ciclo de Vida Estandarizado
-MitaDOM te permite usar los ciclos de vida en tu idioma:
-* `alMontar()`: Se ejecuta al entrar al DOM (equivalente a `connectedCallback`).
-* `alDesmontar()`: Se ejecuta al salir del DOM (equivalente a `disconnectedCallback`).
-* `render()`: Tu función principal, protegida automáticamente por un Error Boundary de MitaDOM.
+### 2. Ciclo de Vida Estandarizado (Orden Garantizado)
+MitaDOM ejecuta los hooks en este orden exacto (sin necesidad de volver a llamar `this.render()` dentro de `alMontar()`):
+* `alCrear()`: se ejecuta en el `constructor` (ideal para crear Signals locales).
+* `alAntesDeRenderizar()`: opcional, justo antes del primer `render()`.
+* `render()`: pinta el Light DOM una vez, protegido automáticamente por Error Boundary (`fallbackUI(error)` + `alError(error, fase)`).
+* `alMontar()`: se ejecuta después de `render()`, cuando el DOM ya existe (`this.querySelector` garantizado).
+* `alCambiarProp(propCamel, antes, ahora)` / `alCambiarAtributo(attr, antes, ahora)`: reacciona a cambios de `observedAttributes`.
+* `alActualizar(motivo)`: se dispara al invocar `this.solicitarActualizacion(motivo)`.
+* `alDesmontar()`: se ejecuta al salir del DOM **después** de liberar automáticamente todas las suscripciones de `this.vincularTexto()`, `this.escucharEstado()`, `this.mostrarSi()` y `this.registrarLimpieza()`.
 
 ### 3. Evitando el Anti-Patrón (DX Linter)
 Si intentas hacer `this.innerHTML` muchas veces por segundo (ej: en una animación o dentro del `suscribir` de un estado), MitaDOM detectará el abuso y lanzará un **Warning**.
@@ -83,7 +115,10 @@ Para testear Web Components en Node, usamos `jsdom`.
    Evita usar threads antiguos. Mantenlo simple:
    ```js
    export default defineConfig({
-     test: { environment: 'jsdom' }
+     test: {
+       environment: 'jsdom',
+       pool: 'vmThreads' // Reutiliza jsdom por worker manteniendo aislamiento por archivo (Vitest 5)
+     }
    });
    ```
 
@@ -105,4 +140,20 @@ Para testear Web Components en Node, usamos `jsdom`.
 ---
 
 ## 💡 Ejemplos Prácticos
-Revisa la carpeta `optica-01/src/components` para ver ejemplos en producción del uso de `MitaElement`, como el `FriendlyDatePicker` que integra eventos (`this.emit`), lectura de `this.props` y reactividad condicional del DOM.
+Revisa la carpeta `optica-01/src/components`, `food-show-1` y el portal [docs-mita-dom.vercel.app](https://docs-mita-dom.vercel.app/) para ver ejemplos en producción del uso de `MitaElement`, Signals v2.7, `rustGuard`, `@defer`, `Signal Forms` y eventos reactivos.
+
+---
+
+## 🤝 ¿Quieres Colaborar en Nuevas Versiones (`v2.8.0` / `v3.0.0`)?
+
+¡**MitaDOM** es open-source y la comunidad está invitada a construir las siguientes versiones! Puedes aportar código, tests Playwright, ejemplos interactivos, adaptadores Express/Docker o mejoras de documentación:
+
+```bash
+gh repo fork moonhuntercode/mita-dom --clone=true
+cd mita-dom && npm install
+git checkout -b feat/mi-aporte
+npm run release:check
+gh pr create --base main --title "feat: mi aporte a MitaDOM"
+```
+
+Revisa [CONTRIBUTING.md](./CONTRIBUTING.md) y la [Guía Completa de Git Flow, PRs, GitHub CLI y Roadmap](./docs/referencia/GUIA_GIT_FLOW_PR_GH_CLI_Y_RELEASE_ECOSISTEMA_2026-11-23.md) para ver qué falta construir y elegir tu primer issue (`good first issue` / `help wanted`).

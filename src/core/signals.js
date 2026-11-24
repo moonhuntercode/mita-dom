@@ -335,13 +335,40 @@ export class SignalDerivado extends Signal {
 // ==========================================
 
 /**
+ * Determina si los logs informativos de mutación deben imprimirse en consola.
+ * Silencioso por defecto en entornos de testing (Vitest / node --test), CI y producción
+ * para evitar desbordar el buffer de terminal; se puede activar con `{ debug: true }`
+ * o `globalThis.__MITA_DEBUG__ = true`.
+ * @param {Object} [options]
+ * @returns {boolean}
+ */
+function debeImprimirLogSignal(options = {}) {
+    if (options.debug === true || /** @type {any} */ (globalThis).__MITA_DEBUG__ === true) {
+        return true;
+    }
+    if (options.debug === false) return false;
+    if (typeof process !== 'undefined' && process.env) {
+        if (
+            process.env.VITEST ||
+            process.env.NODE_TEST_CONTEXT ||
+            process.env.CI ||
+            process.env.NODE_ENV === 'test' ||
+            process.env.NODE_ENV === 'production'
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
      * Crea un estado global.
      * Ideal para compartir datos entre múltiples componentes (ej. Sesión, Tema, Configuración).
-     * Provee feedback visual en consola para facilitar el debugging.
+     * Provee feedback visual en consola en desarrollo (silencioso en test/producción salvo `{ debug: true }`).
      * 
      * @template T
      * @param {T} valorInicial El valor inicial del estado (puede ser de cualquier tipo)
-     * @param {Object} [options={}] Opciones de Signal (ej. persistKey, onMutate)
+     * @param {Object} [options={}] Opciones de Signal (ej. persistKey, onMutate, debug)
      * @returns {Signal<T>} Instancia de Signal estricta
      */
 export function crearEstadoGlobal(valorInicial, options = {}) {
@@ -349,7 +376,9 @@ export function crearEstadoGlobal(valorInicial, options = {}) {
     const onMutateOriginal = opts.onMutate;
     
     opts.onMutate = (nuevo, viejo) => {
-        console.info(`🌍 [MitaDOM] Estado Global Mutado con éxito:`, nuevo);
+        if (debeImprimirLogSignal(opts)) {
+            console.info(`🌍 [MitaDOM] Estado Global Mutado con éxito:`, nuevo);
+        }
         if (onMutateOriginal) onMutateOriginal(nuevo, viejo);
     };
     
@@ -359,7 +388,7 @@ export function crearEstadoGlobal(valorInicial, options = {}) {
 /**
  * Crea un estado local.
  * Ideal para uso efímero dentro de un solo componente web (ej. contadores, formularios).
- * Provee feedback visual en consola para facilitar el debugging.
+ * Provee feedback visual en consola en desarrollo (silencioso en test/producción salvo `{ debug: true }`).
  * 
  * @template T
  * @param {T} valorInicial El valor inicial del estado local
@@ -371,7 +400,9 @@ export function crearEstadoLocal(valorInicial, options = {}) {
     const onMutateOriginal = opts.onMutate;
     
     opts.onMutate = (nuevo, viejo) => {
-        console.info(`🏠 [MitaDOM] Estado Local Mutado con éxito:`, nuevo);
+        if (debeImprimirLogSignal(opts)) {
+            console.info(`🏠 [MitaDOM] Estado Local Mutado con éxito:`, nuevo);
+        }
         if (onMutateOriginal) onMutateOriginal(nuevo, viejo);
     };
     
@@ -419,6 +450,26 @@ export function crearEfecto(fn) {
         nodoEfecto.dependencias.forEach(dep => dep.desuscribir(nodoEfecto.ejecutar));
         nodoEfecto.dependencias.clear();
     };
+}
+
+/**
+ * 🙈 Ejecuta una función leyendo o mutando Signals SIN registrarlos como dependencias
+ * del `crearEfecto()` activo (equivalente a `untrack()` en SolidJS).
+ * Evita bucles infinitos al escribir en un Signal interno dentro de un efecto.
+ *
+ * @template T
+ * @param {() => T} fn Función a ejecutar fuera del rastreo reactivo
+ * @returns {T} Resultado de `fn`
+ */
+export function sinRastrear(fn) {
+    // Empujamos null como barrera en la pila: Signal.get() ve efectoActivo === null y no suscribe
+    // @ts-ignore
+    pilaDeEfectos.push(null);
+    try {
+        return fn();
+    } finally {
+        pilaDeEfectos.pop();
+    }
 }
 
 /**

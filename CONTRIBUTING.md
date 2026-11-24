@@ -148,9 +148,50 @@ gh release create v2.7.0 --title "📚 Docs MitaDOM v2.7.0" --notes "Sincronizad
 
 ---
 
-## 6. 📋 Checklist Rápido de Pull Requests
+## 6. 🔀 Pull Requests, Git Flow, GitHub CLI (`gh`) e Invitación a Colaborar
+
+> 📘 **Guía completa de los 3 repositorios (`mita-dom`, `docs-mita-dom`, `food-show-1`), commits redactados y Roadmap:** [docs/referencia/GUIA_GIT_FLOW_PR_GH_CLI_Y_RELEASE_ECOSISTEMA_2026-11-23.md](./docs/referencia/GUIA_GIT_FLOW_PR_GH_CLI_Y_RELEASE_ECOSISTEMA_2026-11-23.md).
+
+### A. Flujo Git Flow y Backup Seguro
+
+1. Crea siempre una rama desde `main` actualizado: `feat/<nombre>`, `fix/<nombre>`, `docs/<nombre>` o `release/vX.Y.Z`.
+2. Antes de hacer merge de una nueva versión a `main`, sube tu rama `release/vX.Y.Z` a GitHub (`git push -u origin release/vX.Y.Z`) como respaldo remoto inmutable.
+3. Fusiona con `git merge --no-ff release/vX.Y.Z`, etiqueta con `git tag -a vX.Y.Z` y crea el Release con `gh release create`.
+
+### B. Cómo Enviar un Pull Request con GitHub CLI (`gh`)
+
+```bash
+# 1. Hacer fork y clonar en un solo paso
+gh repo fork moonhuntercode/mita-dom --clone=true
+cd mita-dom && npm install
+
+# 2. Crear rama, desarrollar y verificar QA
+git checkout -b feat/mi-mejora
+npm run release:check
+
+# 3. Commit (Conventional Commits) y push
+git add .
+git commit -m "feat(core): descripción clara de tu mejora"
+git push -u origin feat/mi-mejora
+
+# 4. Abrir Pull Request desde la terminal
+gh pr create --base main --title "feat(core): descripción clara" --body "Resumen de cambios + confirmación de npm run release:check en verde."
+```
+
+Comandos frecuentes de revisión: `gh pr list`, `gh pr checkout <N>`, `gh pr diff <N>`, `gh pr review <N> --approve`, `gh pr merge <N> --squash --delete-branch`.
+
+### C. 🤝 Invitación Abierta a Colaborar en Nuevas Versiones
+
+¡Todas las contribuciones para **`v2.8.0` y `v3.0.0`** son bienvenidas! (Subpath exports, Playwright E2E, Server Actions Express/Fastify, nuevos laboratorios en `docs-mita-dom`, mejoras de accesibilidad o correcciones de documentación).
+
+- Busca issues con etiqueta **`good first issue`** o **`help wanted`** con `gh issue list --label "help wanted"`.
+- Si deseas proponer una nueva funcionalidad antes de programar, abre un Issue con `gh issue create --title "feat: ..." --label "enhancement"`.
+
+---
+
+## 7. 📋 Checklist Rápido de Pull Requests
 
 - [ ] Título de commit siguiendo Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-- [ ] `npm run release:check` en verde (0 errores ESLint, 0 Stylelint, 100% tests en verde).
+- [ ] `npm run release:check` en verde (0 errores ESLint, 0 Stylelint, 100% tests en verde, tarball ligero).
 - [ ] Tipos actualizados en `types/index.d.ts` y documentación regenerada con `npm run docs:auto`.
 - [ ] Ejemplos Antes vs Después agregados en `changelogs/` cuando se introduce una API nueva.

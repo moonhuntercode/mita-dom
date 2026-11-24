@@ -1,7 +1,7 @@
 // @ts-check
 import { mitaResult } from '../utils/result.js';
 import { telemetry } from './telemetry.js';
-import { renderCondicional } from './render.js';
+import { renderCondicional, vincularTexto } from './render.js';
 
 // Shim isomórfico para permitir importar MitaElement en Node.js (SSR / SSG) sin JSDOM
 if (typeof HTMLElement === 'undefined') {
@@ -10,14 +10,27 @@ if (typeof HTMLElement === 'undefined') {
 }
 
 /**
- * Clase base MitaElement para crear Web Components Nativos con superpoderes.
- * Proporciona Error Boundaries (try/catch automático en render) y 
- * Telemetría básica (registro de performance).
- * 
+ * Clase base MitaElement para crear Web Components Nativos con ciclo de vida completo y legible.
+ *
+ * Orden garantizado del ciclo de vida:
+ * 1. `alCrear()` — Constructor (inicializar `crearEstadoLocal`, sin depender aún del DOM).
+ * 2. `alAntesDeRenderizar()` — Justo antes del primer `render()` al conectar al DOM.
+ * 3. `render()` — Pinta el Light DOM una vez, protegido con Error Boundary (`fallbackUI` / `alError`).
+ * 4. `alMontar()` — DOM ya montado (`this.querySelector` garantizado): enlazar `vincularTexto`, `escucharEstado`, `mostrarSi` y eventos.
+ * 5. `alCambiarAtributo(nombre, antes, ahora)` / `alCambiarProp(propCamel, antes, ahora)` — Cambios en `observedAttributes`.
+ * 6. `alActualizar(motivo)` — Tras `this.solicitarActualizacion(motivo)`.
+ * 7. Auto-limpieza de `this._limpiezas` + `alDesmontar()` — Al salir del DOM (0 fugas de memoria).
+ *
  * @extends HTMLElement
- * @property {() => void} [alMontar] Hook de ciclo de vida en español equivalente a connectedCallback
- * @property {() => void} [alDesmontar] Hook de ciclo de vida en español equivalente a disconnectedCallback
- * @property {() => void} [render] Método principal para pintar HTML, protegido por try/catch
+ * @property {() => void} [alCrear] Hook inicial ejecutado en el constructor
+ * @property {() => void} [alAntesDeRenderizar] Hook ejecutado justo antes del primer render()
+ * @property {() => void | string | Promise<void | string>} [render] Método principal para pintar HTML, protegido por Error Boundary
+ * @property {() => void | Promise<void>} [alMontar] Hook de ciclo de vida en español equivalente a connectedCallback post-render
+ * @property {(nombre: string, valorAnterior: string | null, valorNuevo: string | null) => void} [alCambiarAtributo] Hook nativo cuando cambia un atributo observado
+ * @property {(nombreProp: string, valorAnterior: string | null, valorNuevo: string | null) => void} [alCambiarProp] Hook ergonómico en camelCase cuando cambia un atributo observado
+ * @property {(motivo: string) => void} [alActualizar] Hook ejecutado tras `solicitarActualizacion(motivo)`
+ * @property {() => void | Promise<void>} [alDesmontar] Hook de ciclo de vida en español equivalente a disconnectedCallback
+ * @property {(error: Error, fase: string) => void} [alError] Hook opcional para capturar errores de cualquier fase
  * @property {(error: Error) => string} [fallbackUI] Función que devuelve el HTML a mostrar si `render` falla
  */
 export class MitaElement extends HTMLElement {
@@ -30,6 +43,41 @@ export class MitaElement extends HTMLElement {
     this._lastInnerHTMLTime = 0;
     /** @type {Array<() => void>} Lista de funciones de limpieza ejecutadas al desmontar */
     this._limpiezas = [];
+    /** @type {'creado' | 'renderizando' | 'montado' | 'actualizado' | 'desmontado' | 'error'} */
+    this._faseCiclo = 'creado';
+    this._estaMontado = false;
+
+    // 1. Fase alCrear() (segura en constructor)
+    // @ts-ignore
+    if (typeof this.alCrear === 'function') {
+      const [err] = /** @type {[Error | null, any]} */ (mitaResult(() => this.alCrear()));
+      if (err) {
+        this._reportarErrorFase('alCrear', err);
+      }
+    }
+  }
+
+  /**
+   * Reporta un error de ciclo de vida a telemetría y al hook opcional `alError(error, fase)`.
+   * @private
+   * @param {string} fase
+   * @param {Error} err
+   */
+  _reportarErrorFase(fase, err) {
+    this._faseCiclo = 'error';
+    const tag = (this.tagName || 'mita-element').toLowerCase();
+    console.error(`[MitaDOM] Error en ${fase} de <${tag}>:`, err);
+    telemetry.capture({
+      type: 'COMPONENT_LIFECYCLE_ERROR',
+      component: tag,
+      method: fase,
+      message: err.message,
+      stack: err.stack
+    });
+    // @ts-ignore
+    if (typeof this.alError === 'function') {
+      mitaResult(() => this.alError(err, fase));
+    }
   }
 
   /**
@@ -65,6 +113,61 @@ export class MitaElement extends HTMLElement {
     const detener = renderCondicional(configuracion);
     this.registrarLimpieza(detener);
     return detener;
+  }
+
+  /**
+   * 🎯 Vincula un Signal directamente al `textContent` de un selector CSS o nodo DOM
+   * (Granular Light DOM estilo Vue Vapor / Solid) y lo limpia automáticamente al desmontar.
+   * @template T
+   * @param {any} signal Signal reactivo
+   * @param {string | HTMLElement | null} selectorONodo Selector CSS dentro del componente o nodo DOM
+   * @param {(valor: T) => string} [formateador] Formateador opcional
+   * @returns {() => void}
+   */
+  vincularTexto(signal, selectorONodo, formateador) {
+    const nodo =
+      typeof selectorONodo === 'string' && typeof this.querySelector === 'function'
+        ? /** @type {HTMLElement | null} */ (this.querySelector(selectorONodo))
+        : /** @type {HTMLElement | null} */ (selectorONodo);
+    const detener = vincularTexto(signal, nodo, formateador);
+    this.registrarLimpieza(detener);
+    return detener;
+  }
+
+  /**
+   * 🔄 Re-ejecuta `render()` bajo Error Boundary y dispara `alActualizar(motivo)`.
+   * Usar solo para cambios estructurales; para texto/clases prefiere `vincularTexto()` o `escucharEstado()`.
+   * @param {string} [motivo='manual']
+   */
+  solicitarActualizacion(motivo = 'manual') {
+    this._safeRender();
+    this._faseCiclo = 'actualizado';
+    // @ts-ignore
+    if (typeof this.alActualizar === 'function') {
+      const result = mitaResult(() => this.alActualizar(motivo));
+      if (result instanceof Promise) {
+        result.then(([err]) => {
+          if (err) this._reportarErrorFase('alActualizar', err);
+        });
+      } else {
+        const [err] = result;
+        if (err) this._reportarErrorFase('alActualizar', err);
+      }
+    }
+  }
+
+  /**
+   * 🩺 Devuelve un snapshot legible del estado actual del ciclo de vida del componente.
+   * @returns {{ componente: string, faseActual: string, montado: boolean, renders: number, limpiezasPendientes: number }}
+   */
+  obtenerCicloDeVida() {
+    return {
+      componente: (this.tagName || 'mita-element').toLowerCase(),
+      faseActual: this._faseCiclo,
+      montado: this._estaMontado,
+      renders: this._renderCount,
+      limpiezasPendientes: this._limpiezas.length
+    };
   }
 
   /**
@@ -159,18 +262,29 @@ export class MitaElement extends HTMLElement {
     // Telemetría simple
     const t0 = performance.now();
 
-    // Renderizado seguro (Rust style result pattern)
-    this._safeRender();
+    // 2. Fase alAntesDeRenderizar() (prepara datos síncronos antes del primer render)
+    // @ts-ignore
+    if (typeof this.alAntesDeRenderizar === 'function') {
+      const [errAntes] = /** @type {[Error | null, any]} */ (mitaResult(() => this.alAntesDeRenderizar()));
+      if (errAntes) {
+        this._reportarErrorFase('alAntesDeRenderizar', errAntes);
+      }
+    }
 
-    // DX: Ciclo de vida en español
+    // 3. Renderizado seguro (Rust style result pattern)
+    this._faseCiclo = 'renderizando';
+    this._safeRender();
+    this._estaMontado = true;
+    this._faseCiclo = 'montado';
+
+    // 4. DX: Ciclo de vida en español post-render (DOM ya disponible)
     // @ts-ignore
     if (typeof this.alMontar === 'function') {
       const result = mitaResult(() => this.alMontar());
-      
+
       const handleErr = (err) => {
         if (err) {
-          console.error(`[MitaDOM] Error en alMontar de <${this.tagName.toLowerCase()}>`, err);
-          telemetry.capture({ type: 'COMPONENT_LIFECYCLE_ERROR', component: this.tagName.toLowerCase(), method: 'alMontar', message: err.message, stack: err.stack });
+          this._reportarErrorFase('alMontar', err);
         }
       };
 
@@ -184,7 +298,7 @@ export class MitaElement extends HTMLElement {
 
     const t1 = performance.now();
     const loadTime = t1 - t0;
-    
+
     // Registrar métrica en telemetría si es muy lento (>20ms)
     if (loadTime > 20) {
       telemetry.capture({
@@ -297,6 +411,9 @@ export class MitaElement extends HTMLElement {
    * Ciclo de vida: Eliminación del DOM
    */
   disconnectedCallback() {
+    this._estaMontado = false;
+    this._faseCiclo = 'desmontado';
+
     // Limpieza automática de todas las suscripciones/efectos registrados
     if (Array.isArray(this._limpiezas) && this._limpiezas.length > 0) {
       this._limpiezas.forEach((limpiar) => {
@@ -313,10 +430,10 @@ export class MitaElement extends HTMLElement {
     // @ts-ignore
     if (typeof this.alDesmontar === 'function') {
       const result = mitaResult(() => this.alDesmontar());
-      
+
       const handleErr = (err) => {
         if (err) {
-          telemetry.capture({ type: 'COMPONENT_LIFECYCLE_ERROR', component: this.tagName.toLowerCase(), method: 'alDesmontar', message: err.message });
+          this._reportarErrorFase('alDesmontar', err);
         }
       };
 
@@ -330,33 +447,32 @@ export class MitaElement extends HTMLElement {
   }
 
   /**
-   * Ciclo de vida nativo de Web Components: Reacción a atributos observados
-   * Se invoca cuando un atributo listado en 'static get observedAttributes()' cambia.
+   * Ciclo de vida nativo de Web Components: Reacción a atributos observados.
+   * Invoca `alCambiarAtributo(name, oldValue, newValue)` y `alCambiarProp(propCamelCase, oldValue, newValue)`.
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue === newValue) return;
-    
-    // Si el componente define un hook en español 'alCambiarAtributo', lo usamos
-    // @ts-ignore
-    if (typeof this.alCambiarAtributo === 'function') {
-      const result = mitaResult(() => this.alCambiarAtributo(name, oldValue, newValue));
+
+    const invocarHook = (metodo, nombreArg) => {
+      // @ts-ignore
+      if (typeof this[metodo] !== 'function') return;
+      // @ts-ignore
+      const result = mitaResult(() => this[metodo](nombreArg, oldValue, newValue));
       const handleErr = (err) => {
-        if (err) {
-          console.error(`[MitaDOM Error Boundary] Error en alCambiarAtributo de <${this.tagName.toLowerCase()}>:`, err);
-        }
+        if (err) this._reportarErrorFase(metodo, err);
       };
-      
       if (result instanceof Promise) {
         result.then(([err]) => handleErr(err));
       } else {
         const [err] = result;
         handleErr(err);
       }
-    } else {
-      // Comportamiento por defecto: si cambian las props y hay Signals que dependen de ellas, 
-      // deberíamos notificar, pero en MitaDOM alentamos la mutación granular directa 
-      // desde alCambiarAtributo.
-    }
+    };
+
+    invocarHook('alCambiarAtributo', name);
+
+    const nombreCamel = String(name).replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
+    invocarHook('alCambiarProp', nombreCamel);
   }
 }
 

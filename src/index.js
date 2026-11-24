@@ -11,6 +11,7 @@ export {
   crearEstadoGlobal,
   crearEstadoLocal,
   crearEfecto,
+  sinRastrear,
   crearEstadoCompartido,
   obtenerEstadoCompartido,
   listarEstadosCompartidos,
@@ -43,6 +44,21 @@ export {
   renderizarVistaDiferida,
   crearFormularioReactivoConSignals
 } from './core/propsYDefer.js';
+export {
+  CATALOGO_DIAGNOSTICOS_AGENTE,
+  emitirDiagnosticoAgente,
+  obtenerDiagnosticosAgente,
+  limpiarDiagnosticosAgente,
+  crearMemoAsincrono,
+  crearEstadoVinculado,
+  crearEstadoOptimistaConRollback,
+  crearFuncionServidor,
+  crearFuncionServidorEnVivo,
+  ESTRATEGIAS_RENDER_MITA,
+  definirEstrategiaRenderRuta,
+  cambiarEstrategiaRender,
+  obtenerMapaEstrategiasRender
+} from './core/asyncGraph.js';
 
 // Auto-definir componentes del framework
 import { MitaRouter } from './core/mitaRouter.js';
@@ -103,8 +119,13 @@ if (typeof window !== 'undefined') {
     raw: () => telemetry.raw()
   };
   
-  // Anuncio del profiler
-  console.info('🤖 [Mita Profiler] Activo. Usa `mita.profile()` para diagnosticar latencias y cuellos de botella.');
+  // Anuncio del profiler (silencioso en entornos de test/CI)
+  const esEntornoTest =
+    typeof process !== 'undefined' &&
+    Boolean(process.env?.VITEST || process.env?.NODE_TEST_CONTEXT || process.env?.NODE_ENV === 'test');
+  if (!esEntornoTest) {
+    console.info('🤖 [Mita Profiler] Activo. Usa `mita.profile()` para diagnosticar latencias y cuellos de botella.');
+  }
 
   // Retrasamos unos segundos para no afectar el LCP (Time to Interactive)
   setTimeout(() => checkMitaDomVersion(), 3000);

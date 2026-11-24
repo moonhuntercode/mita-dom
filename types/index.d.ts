@@ -37,6 +37,7 @@ export class SignalDerivado<T> extends Signal<T> {
 export function crearEstadoLocal<T>(valorInicial: T, options?: SignalOptions<T>): Signal<T>;
 export function crearEstadoGlobal<T>(valorInicial: T, options?: SignalOptions<T>): Signal<T>;
 export function crearEfecto(fn: () => void): () => void;
+export function sinRastrear<T>(fn: () => T): T;
 export function crearEstadoCompartido<T>(
   nombreUnico: string,
   valorInicial: T,
@@ -78,13 +79,32 @@ export function vincularTexto<T>(
 ): () => void;
 
 export class MitaElement extends HTMLElement {
-  alMontar?(): void;
-  alDesmontar?(): void;
-  render?(): string | void;
+  alCrear?(): void;
+  alAntesDeRenderizar?(): void;
+  alMontar?(): void | Promise<void>;
+  alCambiarAtributo?(nombre: string, valorAnterior: string | null, valorNuevo: string | null): void;
+  alCambiarProp?(nombreProp: string, valorAnterior: string | null, valorNuevo: string | null): void;
+  alActualizar?(motivo: string): void;
+  alDesmontar?(): void | Promise<void>;
+  alError?(error: Error, fase: string): void;
+  render?(): string | void | Promise<string | void>;
   fallbackUI?(error: Error): string;
   registrarLimpieza(limpiarFn: () => void): void;
   escucharEstado<T>(signal: Signal<T>, callback: (val: T) => void): () => void;
   mostrarSi<T>(configuracion: RenderCondicionalConfig<T>): () => void;
+  vincularTexto<T>(
+    signal: Signal<T>,
+    selectorONodo: string | HTMLElement | null,
+    formateador?: (valor: T) => string
+  ): () => void;
+  solicitarActualizacion(motivo?: string): void;
+  obtenerCicloDeVida(): {
+    componente: string;
+    faseActual: string;
+    montado: boolean;
+    renders: number;
+    limpiezasPendientes: number;
+  };
 }
 
 export function definirComponente(nombre: string, configuracion: any): void;
@@ -459,3 +479,171 @@ export function crearGestorBitacoraPorHora(opciones?: { nombreEstado?: string })
 
 /** Activa el modo para IA: Los errores se expulsan en JSON estructurado */
 export function enableAIDevMode(): void;
+
+
+// ============================================================================
+// Async Graph (Solid 2.0), linkedSignal (Angular 20), Live SSE & Agent Diagnostics
+// ============================================================================
+export const CATALOGO_DIAGNOSTICOS_AGENTE: Readonly<
+  Record<
+    | 'MITA_LECTURA_SIN_RASTREO'
+    | 'MITA_ESPERA_PROLONGADA'
+    | 'MITA_CASCADA_ASINCRONA'
+    | 'MITA_BUCLE_EFECTO'
+    | 'MITA_SIN_LIMPIEZA_DOM'
+    | 'MITA_RENDER_DUPLICADO',
+    {
+      codigo: string;
+      equivalenteSolid2: string;
+      severidad: string;
+      mensaje: string;
+      solucion: string;
+      guiaAgente: string;
+    }
+  >
+>;
+
+export function emitirDiagnosticoAgente(
+  codigo: keyof typeof CATALOGO_DIAGNOSTICOS_AGENTE,
+  contexto?: { origen?: string; detalle?: string; silencioso?: boolean }
+): {
+  codigo: string;
+  equivalenteSolid2: string;
+  severidad: string;
+  origen: string;
+  detalle: string;
+  mensaje: string;
+  solucion: string;
+  guiaAgente: string;
+  timestamp: string;
+};
+
+export function obtenerDiagnosticosAgente(): Array<ReturnType<typeof emitirDiagnosticoAgente>>;
+export function limpiarDiagnosticosAgente(): void;
+
+export function crearMemoAsincrono<T>(
+  fnAsincrona: (ctx: { signal: AbortSignal }) => Promise<T> | T,
+  opciones?: {
+    valorInicial?: T | null;
+    umbralEsperaProlongadaMs?: number;
+    nombre?: string;
+    silenciosoDiagnostico?: boolean;
+  }
+): {
+  estado: Signal<{
+    valor: T | null;
+    pendiente: boolean;
+    error: string | null;
+    esperaProlongada: boolean;
+    version: number;
+    latenciaMs: number;
+  }>;
+  valor(): T | null;
+  estaPendiente(): boolean;
+  esperaProlongada(): boolean;
+  error(): string | null;
+  reintentar(): void;
+  destruir(): void;
+};
+
+export function crearEstadoVinculado<TFuente, TValor>(
+  leerFuente: () => TFuente,
+  calcularValor: (valorFuente: TFuente, valorAnterior: TValor | undefined) => TValor
+): {
+  estado: Signal<TValor>;
+  get(): TValor;
+  set(nuevoValor: TValor): boolean;
+  suscribir(cb: (val: TValor) => void): () => void;
+  destruir(): void;
+};
+
+export function crearEstadoOptimistaConRollback<T>(valorInicial: T): {
+  estado: Signal<{
+    valor: T;
+    valorConfirmado: T;
+    estaConfirmando: boolean;
+    seHizoRollback: boolean;
+    ultimoError: string | null;
+  }>;
+  valor(): T;
+  aplicarConServidor(
+    valorOptimista: T,
+    mutacionServidor: () => Promise<T | void>
+  ): Promise<{ ok: boolean; valor: T; rollback: boolean; error?: string }>;
+  destruir(): void;
+};
+
+export function crearFuncionServidor<TPayload, TResultado>(
+  nombre: string,
+  handlerServidor: (payload: TPayload) => Promise<TResultado> | TResultado,
+  opciones?: { validar?: (payload: TPayload) => string | null; endpoint?: string }
+): {
+  nombre: string;
+  endpoint: string;
+  estado: Signal<{
+    nombre: string;
+    endpoint: string;
+    pendiente: boolean;
+    datos: TResultado | null;
+    error: string | null;
+    latenciaMs: number;
+    invocaciones: number;
+  }>;
+  ejecutar(
+    payload: TPayload
+  ): Promise<{ ok: boolean; datos: TResultado | null; error: string | null; latenciaMs: number }>;
+  destruir(): void;
+};
+
+export function crearFuncionServidorEnVivo<T>(
+  nombre: string,
+  generadorAsync: (...args: any[]) => AsyncGenerator<T, void, unknown>
+): {
+  nombre: string;
+  estado: Signal<{
+    nombre: string;
+    conectado: boolean;
+    valor: T | null;
+    ticks: number;
+    error: string | null;
+  }>;
+  ultimoValor(): T | null;
+  iniciar(...args: any[]): Promise<void>;
+  detener(): Promise<void>;
+  destruir(): void;
+};
+
+export type EstrategiaRenderMita = 'CSR' | 'SSR' | 'SSG' | 'HYBRID' | 'RESUMABLE';
+
+export const ESTRATEGIAS_RENDER_MITA: Readonly<
+  Record<
+    EstrategiaRenderMita,
+    {
+      codigo: EstrategiaRenderMita;
+      titulo: string;
+      servidorExpress: string;
+      hidratacion: string;
+      idealPara: string;
+    }
+  >
+>;
+
+export function definirEstrategiaRenderRuta(
+  ruta: string,
+  estrategia: EstrategiaRenderMita,
+  opciones?: { cacheSegundos?: number }
+): {
+  ruta: string;
+  estrategia: EstrategiaRenderMita;
+  cacheSegundos: number;
+  descripcion: string;
+  detalles: (typeof ESTRATEGIAS_RENDER_MITA)[EstrategiaRenderMita];
+};
+
+export function cambiarEstrategiaRender(
+  ruta: string,
+  nuevaEstrategia: EstrategiaRenderMita,
+  opciones?: { cacheSegundos?: number }
+): ReturnType<typeof definirEstrategiaRenderRuta>;
+
+export function obtenerMapaEstrategiasRender(): Array<ReturnType<typeof definirEstrategiaRenderRuta>>;

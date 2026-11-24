@@ -1,6 +1,6 @@
 {
   "name": "mita-dom",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "homepage": "https://github.com/moonhuntercode/mita-dom#readme",
   "repository": {
     "type": "git",
@@ -34,6 +34,14 @@
       "types": "./types/index.d.ts",
       "default": "./dist/mita-dom.js"
     },
+    "./signals": "./src/core/signals.js",
+    "./async": "./src/core/asyncGraph.js",
+    "./rust": "./src/core/rustGuard.js",
+    "./ssr": "./src/core/ssr.js",
+    "./props": "./src/core/propsYDefer.js",
+    "./element": "./src/core/mitaElement.js",
+    "./ui": "./src/utils/uiModeracionYComunidad.js",
+    "./devtools": "./src/utils/fullstackYDevtools.js",
     "./package.json": "./package.json",
     "./docs/aprende/*.md": "./docs/aprende/*.md",
     "./docs/referencia/*.md": "./docs/referencia/*.md",
@@ -44,6 +52,7 @@
     "dist",
     "bin",
     "types",
+    "skills",
     "src",
     "!src/svg/**",
     "!src/**/*.test.js",

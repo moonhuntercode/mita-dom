@@ -1,6 +1,39 @@
-# 📜 Changelog Consolidado de MitaDOM (hasta v2.7.0)
+# 📜 Changelog Consolidado de MitaDOM (hasta v2.8.0)
 
-> Auto-consolidado el `2026-11-23` desde `changelogs/*.md` mediante `npm run docs:auto`.
+> Auto-consolidado el `2026-11-24` desde `changelogs/*.md` mediante `npm run docs:auto`.
+
+---
+
+<!-- Fuente: changelogs/2026-11-23-v2.8.0.md -->
+# 📝 Changelog v2.8.0 — 2026-11-23 (Ciclo de Vida Completo, Solid 2.0 Async Graph, `sinRastrear`, Subpath Exports y Agent Diagnostics)
+
+- **Fecha de lanzamiento:** `2026-11-23`
+- **Autor:** Victor Code (Bolivia) — `mita-dom`
+- **Compatibilidad:** **100% retrocompatible con `v2.7.0`** (`0` breaking changes; bump MINOR según SemVer).
+
+---
+
+## ✨ Novedades Principales de `v2.8.0`
+
+### 1. 🧬 Ciclo de Vida Completo y Unificado en `MitaElement`
+- Orden oficial garantizado sin dobles renders: **`alCrear()` → `alAntesDeRenderizar()` → `render()` (Error Boundary `fallbackUI`/`alError`) → `alMontar()` (DOM listo) → `alCambiarProp()` / `alCambiarAtributo()` → `alActualizar()` → Auto-Limpieza `_limpiezas` + `alDesmontar()`**.
+- Nuevos atajos ergonómicos: `this.vincularTexto(signal, selectorONodo, fn)` (auto-limpiado), `this.solicitarActualizacion(motivo)` y `this.obtenerCicloDeVida()`.
+
+### 2. ⚡ Async Graph (`Solid 2.0`), `linkedSignal` (`Angular 20`), Optimistic Rollback (`React 19`) y Estrategias en 1 Línea (`src/core/asyncGraph.js`)
+- **`crearMemoAsincrono(fnAsync, opts)`:** promesas dentro del grafo reactivo, cancelación automática de *race conditions* con `AbortSignal`, UI *stale* (`estaPendiente()`) y detección `MITA_ESPERA_PROLONGADA` (`LONG_HOLD`).
+- **`crearEstadoVinculado(leerFuente, calcular)`:** estado derivado escribible que se reinicia automáticamente al cambiar su fuente padre.
+- **`crearEstadoOptimistaConRollback(inicial)`:** actualización optimista instantánea con rollback automático si falla el servidor.
+- **`crearFuncionServidor()` y `crearFuncionServidorEnVivo()` (`live()` `async function*` / SSE):** RPC y streaming reactivo directo a Signals.
+- **`definirEstrategiaRenderRuta()` / `cambiarEstrategiaRender()`:** cambia cualquier ruta en 1 línea entre `CSR`, `SSR`, `SSG`, `HYBRID` y `RESUMABLE`.
+
+### 3. 🙈 `sinRastrear(fn)` (`untrack`) y Consola Silenciosa en Tests/Producción
+- **`sinRastrear(fn)`** en `src/core/signals.js`: permite leer o mutar Signals internos dentro de `crearEfecto()` sin auto-suscribirse (evitando bucles infinitos).
+- **Consola limpia por defecto** en `VITEST`, `NODE_TEST_CONTEXT`, `CI` y `production` (activable con `{ debug: true }` o `globalThis.__MITA_DEBUG__ = true`).
+
+### 4. 🤖 Built to Be Written by Agents + 📦 Subpath Exports
+- **`emitirDiagnosticoAgente()` + `skills/reactivity-diagnostics/SKILL.md`** incluida en el paquete NPM (`"files": ["skills"]`).
+- **Subpath Exports granulares** en `package.json`: `mita-dom/signals`, `mita-dom/async`, `mita-dom/rust`, `mita-dom/ssr`, `mita-dom/props`, `mita-dom/element`, `mita-dom/ui`, `mita-dom/devtools`.
+- **Auto-Documentación categorizada estilo `react.dev/reference/react`** (`22` módulos) + Glosario A–Z + Guía Express 5 / Routing / Data Fetching / Alias / Vite 8 Oxc.
 
 ---
 
@@ -268,8 +301,27 @@ export class PanelAnuncios extends MitaElement {
 
 ### 13. Optimización de Empaquetado NPM (`package.json`)
 
-- Inclusión explícita de `bin/` (`npx mita`) y `types/index.d.ts` en `"files"`.
-- Exclusión de assets pesados no utilizados (`src/svg/**`) y pruebas internas (`src/**/*.test.js`), reduciendo el tarball NPM en ~90% (de 1.8 MB a < 250 KB).
+- Inclusión explícita de `bin/` (`npx mita`), `types/index.d.ts` y `skills/reactivity-diagnostics/SKILL.md` en `"files"`.
+- Exclusión de assets pesados no utilizados (`src/svg/**`) y pruebas internas (`src/**/*.test.js`), reduciendo el tarball NPM en ~85%.
+
+---
+
+### 14. Ciclo de Vida Completo `MitaElement` + Async Graph (`Solid 2.0`, `Angular 20`, `React 19`, `Vue Vapor`, `Qwik`)
+
+- **`MitaElement` unificado y legible:** orden garantizado `alCrear()` → `alAntesDeRenderizar()` → `render()` (con Error Boundary `fallbackUI`/`alError`) → `alMontar()` → `alCambiarProp()` / `alCambiarAtributo()` → `alActualizar()` → Auto-Limpieza + `alDesmontar()`, más `this.vincularTexto()`, `this.solicitarActualizacion()` y `this.obtenerCicloDeVida()`.
+- **`src/core/asyncGraph.js`:** `crearMemoAsincrono()` (Solid 2.0 Async Graph + cancelación de race conditions + `LONG_HOLD`), `crearEstadoVinculado()` (Angular 20 `linkedSignal`), `crearEstadoOptimistaConRollback()` (React 19 / Solid 2.0), `crearFuncionServidor()`, `crearFuncionServidorEnVivo()` (`live()` `async function*` SSE), `definirEstrategiaRenderRuta()` / `cambiarEstrategiaRender()` en 1 línea (`CSR`, `SSR`, `SSG`, `HYBRID`, `RESUMABLE`) y `emitirDiagnosticoAgente()` con Agent Repair Guide `skills/reactivity-diagnostics/SKILL.md`.
+- **Documentación Nueva:** `GUIA_CICLO_DE_VIDA_Y_SOLID2_ASYNC_GRAPH_2026-11-23.md`, `GUIA_EXPRESS_ROUTING_DATA_FETCHING_Y_ALIAS_FOOD_SHOW_2026-11-23.md` y `GUIA_GIT_FLOW_PR_GH_CLI_Y_RELEASE_ECOSISTEMA_2026-11-23.md`.
+
+---
+
+### 15. `sinRastrear()` (`untrack`), Corrección de Bucle `LONG_HOLD`, Router sin `EnvironmentTeardownError` y Referencia estilo `react.dev/reference/react`
+
+- **`sinRastrear(fn)` en `src/core/signals.js`:** permite leer/mutar estados internos dentro de `crearEfecto()` sin auto-suscribirse (equivalente a `untrack()` de SolidJS).
+- **Fix Crítico en `crearMemoAsincrono()`:** al envolver los `estado.patch()` internos en `sinRastrear()`, se eliminó el bucle de re-ejecución cuando `timerLongHold` marcaba `esperaProlongada: true`.
+- **Auto-Documentación Categorizada (`scripts/auto-docs.js`) + Glosario A–Z:** `AUTO_API_REFERENCIA.md` ahora agrupa los 22 módulos por categorías estilo `react.dev/reference/react` con mapa rápido de equivalencias, sección **Para Profundizar** y nueva guía `REFERENCIA_COMPLETA_REACT_A_MITADOM_GLOSARIO_Y_PROFUNDIZACION_2026-11-23.md`.
+- **Code Splitting Vite 8 / Rolldown (Cero Warnings `> 500 kB`):** documentado el patrón de carga diferida + `rolldownOptions.output.codeSplitting` + verificación automática `test:bundle` sin alterar `chunkSizeWarningLimit`.
+- **Subpath Exports + Consola Limpia en Tests/Prod + CI GitHub Actions:** exportados `mita-dom/signals`, `mita-dom/async`, `mita-dom/rust`, `mita-dom/ssr`, `mita-dom/props`, `mita-dom/element`, `mita-dom/ui` y `mita-dom/devtools`; logs de `crearEstadoLocal`/`crearEstadoGlobal` silenciados automáticamente en test/CI/producción (opt-in `{ debug: true }`); añadido `.github/workflows/ci.yml`.
+- **Vite 8 Oxc Nativo (`[PLUGIN_TIMINGS]`):** documentado por qué cambiar `minify: 'terser'` → `minify: true` (Oxc en Rust) y activar `@vitejs/plugin-legacy` bajo demanda (`MITA_LEGACY=true`) acelera el build y elimina el aviso de callbacks JS lentos.
 
 ---
 
